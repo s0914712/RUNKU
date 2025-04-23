@@ -281,7 +281,10 @@
         function checkSpeechResult(speech) {
             if (speech === currentWord || speech.includes(currentWord)) {
                 speechResult.innerHTML += '<br><span style="color:green;">✓ 正確!</span>';
+                console.log('單字正確，恢復遊戲');
                 setTimeout(() => {
+                    // 移除當前障礙物
+                    obstacles.shift();
                     wordChallengeActive = false;
                     wordChallenge.style.display = 'none';
                     canvas.focus();
@@ -291,6 +294,7 @@
                     score += 10;
                     scoreElement.textContent = `分數: ${score}`;
                     lastObstacleTime = gameTime; // 重置障礙物計時
+                    console.log('障礙物移除，計時重置:', lastObstacleTime);
                     gameLoop();
                 }, 1500);
             } else {
@@ -305,7 +309,10 @@
             speechResult.textContent = `你輸入: "${input}"`;
             if (input === currentWord) {
                 speechResult.innerHTML += '<br><span style="color:green;">✓ 正確!</span>';
+                console.log('文字輸入正確，恢復遊戲');
                 setTimeout(() => {
+                    // 移除當前障礙物
+                    obstacles.shift();
                     wordChallengeActive = false;
                     wordChallenge.style.display = 'none';
                     canvas.focus();
@@ -315,6 +322,7 @@
                     score += 10;
                     scoreElement.textContent = `分數: ${score}`;
                     lastObstacleTime = gameTime; // 重置障礙物計時
+                    console.log('障礙物移除，計時重置:', lastObstacleTime);
                     gameLoop();
                 }, 1500);
             } else {
@@ -398,6 +406,7 @@
             hintText.textContent = `提示: ${wordList[wordIndex].hint}`;
             wordChallenge.style.display = 'block';
             textInput.value = '';
+            console.log('單字挑戰開始，顯示界面');
         }
 
         // 更新遊戲狀態
@@ -412,9 +421,10 @@
                 player.jumping = false;
             }
 
-            // 每20秒生成一個障礙物
-            if (gameTime - lastObstacleTime >= 20 && obstacles.length === 0) {
+            // 每30秒生成一個障礙物
+            if (gameTime - lastObstacleTime >= 30 && obstacles.length === 0) {
                 createObstacle();
+                console.log('生成新障礙物，時間:', gameTime);
             }
 
             // 檢查是否接近障礙物
