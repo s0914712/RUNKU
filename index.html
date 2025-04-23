@@ -142,7 +142,7 @@
     <button id="restart">重新開始</button>
     <div id="wordChallenge">
         <div id="wordDisplay"></div>
-        <p>請說出上面的英文單字以跳躍:</p>
+        <p>請說出單字以跳過障礙物！</p>
         <button id="speakButton">
             <span class="mic-icon">🎤</span> 開始錄音
         </button>
@@ -178,9 +178,8 @@
         let gameRunning = false;
         let score = 0;
         let speed = 3;
-        let gravity = 0.35; // 降低重力以增加跳躍平滑度
+        let gravity = 0.35;
         let gameTime = 0;
-        let lastWordTime = 0;
         let wordChallengeActive = false;
         let currentWord = "";
         let speechRecognizer;
@@ -219,7 +218,7 @@
             player.useImage = false;
             console.log('無法載入角色圖片，將使用預設矩形代替');
         };
-        player.image.src = 'character.png'; // 確保此圖片存在或移除
+        player.image.src = 'character.png';
 
         // 地面
         const ground = {
@@ -286,9 +285,9 @@
                     wordChallenge.style.display = 'none';
                     canvas.focus();
                     gameRunning = true;
-                    player.velocityY = -12; // 答對單字觸發跳躍
+                    player.velocityY = -12; // 觸發跳躍
                     player.jumping = true;
-                    score += 10; // 答對單字加分
+                    score += 10;
                     scoreElement.textContent = `分數: ${score}`;
                     gameLoop();
                 }, 1500);
@@ -309,7 +308,7 @@
                     wordChallenge.style.display = 'none';
                     canvas.focus();
                     gameRunning = true;
-                    player.velocityY = -12; // 答對單字觸發跳躍
+                    player.velocityY = -12; // 觸發跳躍
                     player.jumping = true;
                     score += 10;
                     scoreElement.textContent = `分數: ${score}`;
@@ -332,7 +331,6 @@
 
         // 設置控制
         function setupControls() {
-            // 移除鍵盤跳躍控制，僅保留重新開始
             document.addEventListener('keydown', function(e) {
                 if (!gameRunning && !wordChallengeActive && (e.code === 'Space' || e.key === ' ' || e.keyCode === 32)) {
                     resetGame();
@@ -377,27 +375,20 @@
                 const seconds = Math.floor(gameTime % 60);
                 timeElement.textContent = `時間: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 
-                const currentMinute = Math.floor(gameTime / 60);
-                if (currentMinute > lastWordTime && currentMinute <= wordList.length) {
-                    startWordChallenge(currentMinute);
-                    lastWordTime = currentMinute;
-                    return;
-                }
-
                 update(deltaTime);
                 draw();
             } else {
-                draw(); // 在單字挑戰時繼續繪製，但不更新障礙物
+                draw(); // 在單字挑戰時繼續繪製
             }
 
             requestAnimationFrame(gameLoop);
         }
 
         // 開始單字挑戰
-        function startWordChallenge(minute) {
+        function startWordChallenge() {
             gameRunning = false;
             wordChallengeActive = true;
-            const wordIndex = (minute - 1) % wordList.length;
+            const wordIndex = Math.floor(Math.random() * wordList.length); // 隨機選擇單字
             currentWord = wordList[wordIndex].word;
             wordDisplay.textContent = currentWord;
             speechResult.textContent = "";
@@ -419,14 +410,22 @@
             }
 
             if (Math.random() < 0.002 && obstacles.length < 5) {
-                // 確保與最後一個障礙物有最小間距
                 const lastObstacle = obstacles[obstacles.length - 1];
                 if (!lastObstacle || lastObstacle.x < canvas.width - 200) {
                     createObstacle();
                 }
             }
 
-            if (!wordChallengeActive) { // 僅在非單字挑戰時移動障礙物
+            // 檢查是否接近障礙物
+            for (let i = 0; i < obstacles.length; i++) {
+                const distance = obstacles[i].x - (player.x + player.width);
+                if (distance > 0 && distance < 200 && !wordChallengeActive) {
+                    startWordChallenge();
+                    break;
+                }
+            }
+
+            if (!wordChallengeActive) {
                 for (let i = 0; i < obstacles.length; i++) {
                     obstacles[i].x -= speed * timeFactor;
                     if (checkCollision(player, obstacles[i])) {
@@ -516,7 +515,6 @@
             score = 0;
             speed = 3;
             gameTime = 0;
-            lastWordTime = 0;
             obstacles = [];
             player.y = canvas.height - 100;
             player.velocityY = 0;
