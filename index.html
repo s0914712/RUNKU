@@ -295,7 +295,11 @@
                     scoreElement.textContent = `分數: ${score}`;
                     lastObstacleTime = gameTime; // 重置障礙物計時
                     console.log('障礙物移除，計時重置:', lastObstacleTime);
-                    gameLoop();
+                    // 確保遊戲循環繼續
+                    if (!gameRunning) {
+                        gameRunning = true;
+                        requestAnimationFrame(gameLoop);
+                    }
                 }, 1500);
             } else {
                 speechResult.innerHTML += '<br><span style="color:red;">✗ 不對喔，再試一次!</span>';
@@ -323,7 +327,11 @@
                     scoreElement.textContent = `分數: ${score}`;
                     lastObstacleTime = gameTime; // 重置障礙物計時
                     console.log('障礙物移除，計時重置:', lastObstacleTime);
-                    gameLoop();
+                    // 確保遊戲循環繼續
+                    if (!gameRunning) {
+                        gameRunning = true;
+                        requestAnimationFrame(gameLoop);
+                    }
                 }, 1500);
             } else {
                 speechResult.innerHTML += '<br><span style="color:red;">✗ 不對喔，再試一次!</span>';
@@ -377,13 +385,14 @@
         function gameLoop(timestamp) {
             if (!gameRunning) return;
 
-            const deltaTime = timestamp - lastTime;
+            // 確保 deltaTime 有效
+            const deltaTime = lastTime ? (timestamp - lastTime) : 16.67; // 預設 60fps
             lastTime = timestamp;
 
             if (!wordChallengeActive) {
                 gameTime += deltaTime / 1000;
-                const minutes = Math.floor(gameTime / 60);
-                const seconds = Math.floor(gameTime % 60);
+                const minutes = Math.floor(gameTime / 60) || 0;
+                const seconds = Math.floor(gameTime % 60) || 0;
                 timeElement.textContent = `時間: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
 
                 update(deltaTime);
@@ -415,10 +424,15 @@
             player.y += player.velocityY * timeFactor;
             player.velocityY += gravity * timeFactor;
 
+            // 確保玩家不超出畫布
             if (player.y + player.height > ground.y) {
                 player.y = ground.y - player.height;
                 player.velocityY = 0;
                 player.jumping = false;
+            }
+            if (player.y < 0) {
+                player.y = 0;
+                player.velocityY = 0;
             }
 
             // 每30秒生成一個障礙物
@@ -460,6 +474,7 @@
             ctx.fillStyle = '#8B4513';
             ctx.fillRect(0, ground.y, canvas.width, ground.height);
 
+            // 繪製玩家
             if (player.useImage) {
                 ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
             } else {
@@ -484,6 +499,7 @@
                 ctx.stroke();
             }
 
+            // 繪製障礙物
             ctx.fillStyle = '#4CAF50';
             for (const obstacle of obstacles) {
                 ctx.beginPath();
