@@ -5,7 +5,133 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>兒童跑酷學習遊戲</title>
     <style>
-        /* 保留原有樣式，移除auth-container相關樣式 */
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #f0f0f0;
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+        }
+        #gameCanvas {
+            display: block;
+            background-color: #87CEEB;
+            margin: 0 auto;
+            outline: none;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 24px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        #timeDisplay {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 24px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            color: red;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+        #restart {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: white;
+            background-color: #4CAF50;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            display: none;
+        }
+        #wordChallenge {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+            z-index: 100;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
+            width: 400px;
+            max-width: 90%;
+        }
+        #wordDisplay {
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: #333;
+            font-weight: bold;
+        }
+        #speakButton {
+            font-size: 24px;
+            padding: 15px 30px;
+            background-color: #4285F4;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 20px 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #speakButton:hover {
+            background-color: #3367D6;
+        }
+        #speakButton.mic-active {
+            background-color: #EA4335;
+            animation: pulse 1.5s infinite;
+        }
+        #textInput, #submitText {
+            display: none;
+            margin: 10px;
+            padding: 10px;
+            font-size: 16px;
+        }
+        #speechResult {
+            font-size: 20px;
+            margin: 15px 0;
+            min-height: 30px;
+            color: #555;
+        }
+        #hintText {
+            font-size: 18px;
+            color: #666;
+            margin-top: 20px;
+        }
+        #userInfo {
+            position: absolute;
+            top: 50px;
+            left: 10px;
+            font-size: 16px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .mic-icon {
+            margin-right: 10px;
+            font-size: 30px;
+        }
     </style>
 </head>
 <body>
@@ -20,14 +146,15 @@
         <button id="speakButton">
             <span class="mic-icon">🎤</span> 開始錄音
         </button>
-        <input type="text" id="textInput" placeholder="或輸入單字" style="display:none;">
-        <button id="submitText" style="display:none;">提交</button>
+        <input type="text" id="textInput" placeholder="或輸入單字">
+        <button id="submitText">提交</button>
         <div id="speechResult"></div>
         <div id="hintText"></div>
     </div>
     <canvas id="gameCanvas" tabindex="1"></canvas>
 
     <script>
+        // 遊戲變數
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const userInfoElement = document.getElementById('userInfo');
@@ -38,14 +165,16 @@
         const wordChallenge = document.getElementById('wordChallenge');
         const wordDisplay = document.getElementById('wordDisplay');
         const speakButton = document.getElementById('speakButton');
-        const speechResult = document.getElementById('speechResult');
-        const hintText = document.getElementById('hintText');
         const textInput = document.getElementById('textInput');
         const submitText = document.getElementById('submitText');
+        const speechResult = document.getElementById('speechResult');
+        const hintText = document.getElementById('hintText');
 
+        // 設置畫布大小
         canvas.width = 800;
         canvas.height = 400;
 
+        // 遊戲狀態
         let gameRunning = false;
         let score = 0;
         let speed = 3;
@@ -57,6 +186,7 @@
         let speechRecognizer;
         let isRecording = false;
 
+        // 英文單字列表
         const wordList = [
             { word: "apple", hint: "蘋果" },
             { word: "banana", hint: "香蕉" },
@@ -65,6 +195,7 @@
             { word: "cat", hint: "貓" }
         ];
 
+        // 玩家角色
         const player = {
             x: 100,
             y: canvas.height - 100,
@@ -76,41 +207,35 @@
             useImage: false
         };
 
+        // 障礙物陣列
         let obstacles = [];
-        const ground = { y: canvas.height - 50, height: 50 };
 
+        // 嘗試載入玩家圖片
         player.image.onload = function() {
             player.useImage = true;
+            console.log('角色圖片載入成功');
         };
         player.image.onerror = function() {
             player.useImage = false;
+            console.log('無法載入角色圖片，將使用預設矩形代替');
         };
-        player.image.src = 'character.png';
+        player.image.src = 'character.png'; // 確保此圖片存在或移除
 
+        // 地面
+        const ground = {
+            y: canvas.height - 50,
+            height: 50
+        };
+
+        // 初始化語音識別
         function initSpeechRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
+                console.warn('瀏覽器不支持語音識別，將使用文字輸入');
+                speakButton.style.display = 'none';
                 textInput.style.display = 'block';
                 submitText.style.display = 'block';
-                speakButton.style.display = 'none';
-                submitText.addEventListener('click', () => {
-                    const input = textInput.value.toLowerCase().trim();
-                    speechResult.textContent = `你輸入: "${input}"`;
-                    if (input === currentWord) {
-                        speechResult.innerHTML += '<br><span style="color:green;">✓ 正確!</span>';
-                        setTimeout(() => {
-                            wordChallengeActive = false;
-                            wordChallenge.style.display = 'none';
-                            canvas.focus();
-                            gameRunning = true;
-                            speed += 0.5;
-                            gameLoop();
-                        }, 1500);
-                    } else {
-                        speechResult.innerHTML += '<br><span style="color:red;">✗ 不對喔，再試一次!</span>';
-                        hintText.textContent = `提示: ${wordList.find(w => w.word === currentWord).hint}`;
-                    }
-                });
+                submitText.addEventListener('click', checkTextInput);
                 return null;
             }
 
@@ -122,6 +247,13 @@
             recognizer.onstart = function() {
                 speakButton.classList.add('mic-active');
                 speechResult.textContent = "聆聽中...";
+                navigator.permissions.query({ name: 'microphone' }).then((result) => {
+                    if (result.state === 'denied') {
+                        speechResult.textContent = "麥克風權限被拒絕，請檢查瀏覽器設置";
+                        speakButton.classList.remove('mic-active');
+                        recognizer.stop();
+                    }
+                });
             };
 
             recognizer.onend = function() {
@@ -133,20 +265,7 @@
             recognizer.onresult = function(event) {
                 const speech = event.results[0][0].transcript.toLowerCase().trim();
                 speechResult.textContent = `你說: "${speech}"`;
-                if (speech === currentWord || speech.includes(currentWord)) {
-                    speechResult.innerHTML += '<br><span style="color:green;">✓ 正確!</span>';
-                    setTimeout(() => {
-                        wordChallengeActive = false;
-                        wordChallenge.style.display = 'none';
-                        canvas.focus();
-                        gameRunning = true;
-                        speed += 0.5;
-                        gameLoop();
-                    }, 1500);
-                } else {
-                    speechResult.innerHTML += '<br><span style="color:red;">✗ 不對喔，再試一次!</span>';
-                    hintText.textContent = `提示: ${wordList.find(w => w.word === currentWord).hint}`;
-                }
+                checkSpeechResult(speech);
             };
 
             recognizer.onerror = function(event) {
@@ -158,14 +277,58 @@
             return recognizer;
         }
 
+        // 檢查語音輸入結果
+        function checkSpeechResult(speech) {
+            if (speech === currentWord || speech.includes(currentWord)) {
+                speechResult.innerHTML += '<br><span style="color:green;">✓ 正確!</span>';
+                setTimeout(() => {
+                    wordChallengeActive = false;
+                    wordChallenge.style.display = 'none';
+                    canvas.focus();
+                    gameRunning = true;
+                    speed += 0.5;
+                    score += 10; // 答對單字加分
+                    scoreElement.textContent = `分數: ${score}`;
+                    gameLoop();
+                }, 1500);
+            } else {
+                speechResult.innerHTML += '<br><span style="color:red;">✗ 不對喔，再試一次!</span>';
+                hintText.textContent = `提示: ${wordList.find(w => w.word === currentWord).hint}`;
+            }
+        }
+
+        // 檢查文字輸入
+        function checkTextInput() {
+            const input = textInput.value.toLowerCase().trim();
+            speechResult.textContent = `你輸入: "${input}"`;
+            if (input === currentWord) {
+                speechResult.innerHTML += '<br><span style="color:green;">✓ 正確!</span>';
+                setTimeout(() => {
+                    wordChallengeActive = false;
+                    wordChallenge.style.display = 'none';
+                    canvas.focus();
+                    gameRunning = true;
+                    speed += 0.5;
+                    score += 10;
+                    scoreElement.textContent = `分數: ${score}`;
+                    gameLoop();
+                }, 1500);
+            } else {
+                speechResult.innerHTML += '<br><span style="color:red;">✗ 不對喔，再試一次!</span>';
+                hintText.textContent = `提示: ${wordList.find(w => w.word === currentWord).hint}`;
+            }
+        }
+
+        // 初始化遊戲
         function initGame() {
             speechRecognizer = initSpeechRecognition();
             canvas.focus();
             gameRunning = true;
             setupControls();
-            gameLoop();
+            requestAnimationFrame(gameLoop); // 確保遊戲循環啟動
         }
 
+        // 設置控制
         function setupControls() {
             document.addEventListener('keydown', function(e) {
                 if (wordChallengeActive) return;
@@ -173,7 +336,7 @@
                     player.velocityY = -10;
                     player.jumping = true;
                     e.preventDefault();
-                } else if (!gameRunning && (e.code === 'Space' || e.key === ' ' || e.keyCode === 32)) {
+                } else if (!gameRunning && !wordChallengeActive && (e.code === 'Space' || e.key === ' ' || e.keyCode === 32)) {
                     resetGame();
                     e.preventDefault();
                 }
@@ -183,7 +346,7 @@
                 canvas.focus();
             });
 
-            speakButton.addEventListener('click', (e) => {
+            speakButton.addEventListener('click', function(e) {
                 e.preventDefault();
                 if (!wordChallengeActive || !speechRecognizer) return;
                 if (!isRecording) {
@@ -202,11 +365,169 @@
             restartButton.addEventListener('click', resetGame);
         }
 
-        // 保留其他函數（gameLoop, startWordChallenge, update, draw等）
+        // 遊戲主循環
+        let lastTime = 0;
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
 
+            const deltaTime = timestamp - lastTime;
+            lastTime = timestamp;
+
+            if (!wordChallengeActive) {
+                gameTime += deltaTime / 1000;
+                const minutes = Math.floor(gameTime / 60);
+                const seconds = Math.floor(gameTime % 60);
+                timeElement.textContent = `時間: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+                const currentMinute = Math.floor(gameTime / 60);
+                if (currentMinute > lastWordTime && currentMinute <= wordList.length) {
+                    startWordChallenge(currentMinute);
+                    lastWordTime = currentMinute;
+                    return;
+                }
+
+                update(deltaTime);
+                draw();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 開始單字挑戰
+        function startWordChallenge(minute) {
+            gameRunning = false;
+            wordChallengeActive = true;
+            const wordIndex = (minute - 1) % wordList.length; // 循環使用單字
+            currentWord = wordList[wordIndex].word;
+            wordDisplay.textContent = currentWord;
+            speechResult.textContent = "";
+            hintText.textContent = `提示: ${wordList[wordIndex].hint}`;
+            wordChallenge.style.display = 'block';
+            textInput.value = ''; // 清空文字輸入框
+        }
+
+        // 更新遊戲狀態
+        function update(deltaTime) {
+            const timeFactor = deltaTime / (1000/60);
+            player.y += player.velocityY * timeFactor;
+            player.velocityY += gravity * timeFactor;
+
+            if (player.y + player.height > ground.y) {
+                player.y = ground.y - player.height;
+                player.velocityY = 0;
+                player.jumping = false;
+            }
+
+            if (Math.random() < 0.005 && obstacles.length < 5) {
+                createObstacle();
+            }
+
+            for (let i = 0; i < obstacles.length; i++) {
+                obstacles[i].x -= speed * timeFactor;
+                if (checkCollision(player, obstacles[i])) {
+                    gameOver();
+                }
+                if (obstacles[i].x + obstacles[i].width < 0) {
+                    obstacles.splice(i, 1);
+                    i--;
+                    score++;
+                    scoreElement.textContent = `分數: ${score}`;
+                }
+            }
+        }
+
+        // 繪製遊戲元素
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, ground.y);
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(0, ground.y, canvas.width, ground.height);
+
+            if (player.useImage) {
+                ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
+            } else {
+                ctx.fillStyle = '#FF6B6B';
+                ctx.beginPath();
+                ctx.roundRect(player.x, player.y, player.width, player.height, 10);
+                ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(player.x + 20, player.y + 20, 8, 0, Math.PI * 2);
+                ctx.arc(player.x + 40, player.y + 20, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.arc(player.x + 20, player.y + 20, 4, 0, Math.PI * 2);
+                ctx.arc(player.x + 40, player.y + 20, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(player.x + 30, player.y + 30, 15, 0.1 * Math.PI, 0.9 * Math.PI);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = '#4CAF50';
+            for (const obstacle of obstacles) {
+                ctx.beginPath();
+                ctx.roundRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height, 5);
+                ctx.fill();
+            }
+        }
+
+        // 創建障礙物
+        function createObstacle() {
+            const height = 40 + Math.random() * 30;
+            const obstacle = {
+                x: canvas.width,
+                y: ground.y - height,
+                width: 40,
+                height: height
+            };
+            obstacles.push(obstacle);
+        }
+
+        // 檢測碰撞
+        function checkCollision(player, obstacle) {
+            return player.x < obstacle.x + obstacle.width &&
+                   player.x + player.width > obstacle.x &&
+                   player.y < obstacle.y + obstacle.height &&
+                   player.y + player.height > obstacle.y;
+        }
+
+        // 遊戲結束
+        function gameOver() {
+            gameRunning = false;
+            gameOverElement.style.display = 'block';
+            restartButton.style.display = 'block';
+            console.log(`最終分數: ${score}`);
+        }
+
+        // 重置遊戲
+        function resetGame() {
+            gameRunning = true;
+            score = 0;
+            speed = 3;
+            gameTime = 0;
+            lastWordTime = 0;
+            obstacles = [];
+            player.y = canvas.height - 100;
+            player.velocityY = 0;
+            player.jumping = false;
+            scoreElement.textContent = `分數: 0`;
+            timeElement.textContent = `時間: 0:00`;
+            gameOverElement.style.display = 'none';
+            restartButton.style.display = 'none';
+            wordChallengeActive = false;
+            wordChallenge.style.display = 'none';
+            canvas.focus();
+            lastTime = 0;
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 頁面載入時初始化
         document.addEventListener('DOMContentLoaded', function() {
-            canvas.width = 800;
-            canvas.height = 400;
             initGame();
         });
     </script>
