@@ -180,6 +180,7 @@
         let speed = 3;
         let gravity = 0.35;
         let gameTime = 0;
+        let lastObstacleTime = 0;
         let wordChallengeActive = false;
         let currentWord = "";
         let speechRecognizer;
@@ -289,6 +290,7 @@
                     player.jumping = true;
                     score += 10;
                     scoreElement.textContent = `分數: ${score}`;
+                    lastObstacleTime = gameTime; // 重置障礙物計時
                     gameLoop();
                 }, 1500);
             } else {
@@ -312,6 +314,7 @@
                     player.jumping = true;
                     score += 10;
                     scoreElement.textContent = `分數: ${score}`;
+                    lastObstacleTime = gameTime; // 重置障礙物計時
                     gameLoop();
                 }, 1500);
             } else {
@@ -388,7 +391,7 @@
         function startWordChallenge() {
             gameRunning = false;
             wordChallengeActive = true;
-            const wordIndex = Math.floor(Math.random() * wordList.length); // 隨機選擇單字
+            const wordIndex = Math.floor(Math.random() * wordList.length);
             currentWord = wordList[wordIndex].word;
             wordDisplay.textContent = currentWord;
             speechResult.textContent = "";
@@ -409,11 +412,9 @@
                 player.jumping = false;
             }
 
-            if (Math.random() < 0.002 && obstacles.length < 5) {
-                const lastObstacle = obstacles[obstacles.length - 1];
-                if (!lastObstacle || lastObstacle.x < canvas.width - 200) {
-                    createObstacle();
-                }
+            // 每20秒生成一個障礙物
+            if (gameTime - lastObstacleTime >= 20 && obstacles.length === 0) {
+                createObstacle();
             }
 
             // 檢查是否接近障礙物
@@ -515,6 +516,7 @@
             score = 0;
             speed = 3;
             gameTime = 0;
+            lastObstacleTime = 0;
             obstacles = [];
             player.y = canvas.height - 100;
             player.velocityY = 0;
