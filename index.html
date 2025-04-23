@@ -142,7 +142,7 @@
     <button id="restart">重新開始</button>
     <div id="wordChallenge">
         <div id="wordDisplay"></div>
-        <p>請說出上面的英文單字:</p>
+        <p>請說出上面的英文單字以跳躍:</p>
         <button id="speakButton">
             <span class="mic-icon">🎤</span> 開始錄音
         </button>
@@ -178,7 +178,7 @@
         let gameRunning = false;
         let score = 0;
         let speed = 3;
-        let gravity = 0.4;
+        let gravity = 0.35; // 降低重力以增加跳躍平滑度
         let gameTime = 0;
         let lastWordTime = 0;
         let wordChallengeActive = false;
@@ -286,7 +286,8 @@
                     wordChallenge.style.display = 'none';
                     canvas.focus();
                     gameRunning = true;
-                    speed += 0.5;
+                    player.velocityY = -12; // 答對單字觸發跳躍
+                    player.jumping = true;
                     score += 10; // 答對單字加分
                     scoreElement.textContent = `分數: ${score}`;
                     gameLoop();
@@ -308,7 +309,8 @@
                     wordChallenge.style.display = 'none';
                     canvas.focus();
                     gameRunning = true;
-                    speed += 0.5;
+                    player.velocityY = -12; // 答對單字觸發跳躍
+                    player.jumping = true;
                     score += 10;
                     scoreElement.textContent = `分數: ${score}`;
                     gameLoop();
@@ -325,18 +327,14 @@
             canvas.focus();
             gameRunning = true;
             setupControls();
-            requestAnimationFrame(gameLoop); // 確保遊戲循環啟動
+            requestAnimationFrame(gameLoop);
         }
 
         // 設置控制
         function setupControls() {
+            // 移除鍵盤跳躍控制，僅保留重新開始
             document.addEventListener('keydown', function(e) {
-                if (wordChallengeActive) return;
-                if (gameRunning && (e.code === 'Space' || e.key === ' ' || e.keyCode === 32) && !player.jumping) {
-                    player.velocityY = -10;
-                    player.jumping = true;
-                    e.preventDefault();
-                } else if (!gameRunning && !wordChallengeActive && (e.code === 'Space' || e.key === ' ' || e.keyCode === 32)) {
+                if (!gameRunning && !wordChallengeActive && (e.code === 'Space' || e.key === ' ' || e.keyCode === 32)) {
                     resetGame();
                     e.preventDefault();
                 }
@@ -388,6 +386,8 @@
 
                 update(deltaTime);
                 draw();
+            } else {
+                draw(); // 在單字挑戰時繼續繪製，但不更新障礙物
             }
 
             requestAnimationFrame(gameLoop);
@@ -397,13 +397,13 @@
         function startWordChallenge(minute) {
             gameRunning = false;
             wordChallengeActive = true;
-            const wordIndex = (minute - 1) % wordList.length; // 循環使用單字
+            const wordIndex = (minute - 1) % wordList.length;
             currentWord = wordList[wordIndex].word;
             wordDisplay.textContent = currentWord;
             speechResult.textContent = "";
             hintText.textContent = `提示: ${wordList[wordIndex].hint}`;
             wordChallenge.style.display = 'block';
-            textInput.value = ''; // 清空文字輸入框
+            textInput.value = '';
         }
 
         // 更新遊戲狀態
@@ -418,20 +418,26 @@
                 player.jumping = false;
             }
 
-            if (Math.random() < 0.005 && obstacles.length < 5) {
-                createObstacle();
+            if (Math.random() < 0.002 && obstacles.length < 5) {
+                // 確保與最後一個障礙物有最小間距
+                const lastObstacle = obstacles[obstacles.length - 1];
+                if (!lastObstacle || lastObstacle.x < canvas.width - 200) {
+                    createObstacle();
+                }
             }
 
-            for (let i = 0; i < obstacles.length; i++) {
-                obstacles[i].x -= speed * timeFactor;
-                if (checkCollision(player, obstacles[i])) {
-                    gameOver();
-                }
-                if (obstacles[i].x + obstacles[i].width < 0) {
-                    obstacles.splice(i, 1);
-                    i--;
-                    score++;
-                    scoreElement.textContent = `分數: ${score}`;
+            if (!wordChallengeActive) { // 僅在非單字挑戰時移動障礙物
+                for (let i = 0; i < obstacles.length; i++) {
+                    obstacles[i].x -= speed * timeFactor;
+                    if (checkCollision(player, obstacles[i])) {
+                        gameOver();
+                    }
+                    if (obstacles[i].x + obstacles[i].width < 0) {
+                        obstacles.splice(i, 1);
+                        i--;
+                        score++;
+                        scoreElement.textContent = `分數: ${score}`;
+                    }
                 }
             }
         }
