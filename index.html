@@ -731,11 +731,10 @@ function collectTeachersFromSchedule(){
   return set;
 }
 
-window.onload = function(){
-  const t=new Date();
-  const yyyy=t.getFullYear(); const mm=String(t.getMonth()+1).padStart(2,'0'); const dd=String(t.getDate()).padStart(2,'0');
-  document.getElementById('startDate').value = `${yyyy}-${mm}-${dd}`;
-};
+ window.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('startDate');
+  if (!el.value) el.value = '2025-09-08';
+ });
 </script>
 </body>
 </html>
