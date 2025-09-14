@@ -213,7 +213,7 @@ document.getElementById('btnDownloadDoc').addEventListener('click', async () => 
 let weeks = 40;
 let days = ["Mon","Tue","Wed","Thu","Fri"];
 let periods = 6;
-let startDate = new Date(2025, 9, 8); // 月份0起
+let startDate = new Date('2025-09-08'); // 月份0起
 let config = [];
 let courseWeekly = [];
 let currentWeek = 0;
@@ -732,8 +732,14 @@ function collectTeachersFromSchedule(){
 }
 
  window.addEventListener('DOMContentLoaded', () => {
-  const el = document.getElementById('startDate');
-  if (!el.value) el.value = '2025-09-08';
+   const el = document.getElementById('startDate');
+   // 若 HTML 已給 value，就用 HTML；若空的再補上預設 2025-09-08
+   if (!el.value) el.value = '2025-09-08';
+   // 即時響應日期變更：更新設定並重繪表格
+   el.addEventListener('change', () => {
+     updateSettings();
+     renderSchedule();
+   });
  });
 </script>
 </body>
