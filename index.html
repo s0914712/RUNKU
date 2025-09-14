@@ -1,8 +1,4 @@
-# 前端（整頁版 HTML）
 
-> 已把「下載 Word 課表」面板與 JS 整合到你的頁面：可輸入週數、二擇一提供 **gs\:// 路徑**或**直接上傳 CSV**，然後呼叫 Cloud Run 下載 `.docx`。
-
-```html
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -48,7 +44,7 @@
 
   <div class="settings-row">
     <label>學期總週數:</label>
-    <input id="totalWeeks" type="number" min="1" max="52" value="40" />
+    <input id="totalWeeks" type="number" min="1" max="52" value="17" />
   </div>
   <div class="settings-row">
     <label>每週上課天數:</label>
@@ -60,22 +56,30 @@
   </div>
   <div class="settings-row">
     <label>學期開始日期:</label>
-    <input id="startDate" type="date" value="2025-08-14" />
+    <input id="startDate" type="date" value="2025-09-08" />
   </div>
 
   <p>請以 JSON 格式輸入課程設定，如：<br />
   <code>[ { "name": "CAT", "teacher": "A", "totalHours": 50 }, ... ]</code></p>
   <textarea id="config">[
-  { "name": "CAT",  "teacher": "A", "totalHours": 50, "location": "CDF", "note": "CAT備考" },
-  { "name": "PIG",  "teacher": "A", "totalHours": 20, "location": "ABC", "note": "PIG備考" },
-  { "name": "Dog",  "teacher": "A", "totalHours": 20 },
-  { "name": "edu",  "teacher": "A", "totalHours": 60 },
-  { "name": "Eye",  "teacher": "B", "totalHours": 10 },
-  { "name": "mouth","teacher": "B", "totalHours": 20 },
-  { "name": "ear",  "teacher": "B", "totalHours": 20 },
-  { "name": "light","teacher": "C", "totalHours": 20 },
-  { "name": "dark", "teacher": "C", "totalHours": 20 },
-  { "name": "gray", "teacher": "C", "totalHours": 20 }
+  { "name": "聯合作戰研究", "teacher": "A", "totalHours": 36, "location": "ABC", "note": "PIG備考" },
+  { "name": "聯合作戰指揮機制研究", "teacher": "A", "totalHours": 18, "location": "ABC", "note": "PIG備考" },
+  { "name": "聯合作戰計畫程序", "teacher": "A", "totalHours": 54 },
+  { "name": "戰略理論", "teacher": "A", "totalHours": 50 },
+  { "name": "戰爭指導", "teacher": "A", "totalHours": 36 },
+  { "name": "戰爭哲學", "teacher": "A", "totalHours": 18 },
+  { "name": "戰略溝通研究", "teacher": "A", "totalHours": 18 },
+  { "name": "全球局勢分析專題研究", "teacher": "A", "totalHours": 36 },
+  { "name": "軍制學", "teacher": "A", "totalHours": 20 },
+  { "name": "國防資源管理", "teacher": "A", "totalHours": 24 },
+  { "name": "專案管理", "teacher": "A", "totalHours": 12 },
+  { "name": "軍事英文", "teacher": "A", "totalHours": 20 },
+  { "name": "軍事專題研究", "teacher": "A", "totalHours": 28 },
+  { "name": "軍事專題寫作與研究方法", "teacher": "A", "totalHours": 12 },
+  { "name": "學術研討及國防政策專題講座", "teacher": "A", "totalHours": 8 },
+  { "name": "課業研習", "teacher": "A", "totalHours": 40 },
+  { "name": "定考", "teacher": "A", "totalHours": 4 },
+  { "name": "主官運用時間", "teacher": "A", "totalHours": 38 }
 ]</textarea>
   <br />
   <button onclick="initSchedule()">初始化並產生</button>
@@ -735,86 +739,4 @@ window.onload = function(){
 </script>
 </body>
 </html>
-```
 
----
-
-# 後端（Cloud Run / Functions Framework）修訂重點
-
-> 你原始的 `main.py` 已完成：支援 **JSON `gs://` 路徑** 與 **`multipart/form-data` 上傳 CSV**；也包含 **CORS**、樣板週前綴自動偵測、合併儲存格等。下面是你只需要「補上的差異」：
-
-1. **CORS + multipart 支援**：
-
-```python
-# 在最上面補這個工具函式（把回應加上 CORS）
-def with_cors(resp):
-    resp.headers["Access-Control-Allow-Origin"] = "*"
-    return resp
-
-@functions_framework.http
-def generate_schedule(request):
-    # --- CORS 預檢 ---
-    if request.method == "OPTIONS":
-        resp = make_response("", 204)
-        resp.headers["Access-Control-Allow-Origin"] = "*"
-        resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
-        resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
-        resp.headers["Access-Control-Max-Age"] = "3600"
-        return resp
-
-    try:
-        req_json = request.get_json(silent=True) or {}
-        req_args = request.args or {}
-        week_num = int(req_json.get("week") or req_args.get("week") or request.form.get("week") or 1)
-
-        df = None
-        # A. 若是 multipart 上傳 CSV
-        if request.files and "csv" in request.files:
-            csv_file = request.files["csv"]
-            df = load_schedule_from_bytes(csv_file.read())
-
-        # B. 否則走 JSON 的 gs:// 路徑
-        if df is None:
-            csv_path = req_json.get("path") or req_args.get("path") or request.form.get("path")
-            if not csv_path:
-                return with_cors(make_response((json.dumps({"error": "請提供上傳 CSV 或 gs:// CSV 路徑"}, ensure_ascii=False), 400, {"Content-Type": "application/json; charset=utf-8"})))
-            df = load_schedule(csv_path)
-
-        # ...（後面照你現有的：build_context_for_week → 偵測樣板週別 → render → merge → 回傳）...
-        # 最後回傳前：
-        return with_cors(resp)
-
-    except Exception as e:
-        # 錯誤時也加 CORS
-        return with_cors(make_response((json.dumps({"error": str(e)}, ensure_ascii=False), 500, {"Content-Type": "application/json; charset=utf-8"})))
-```
-
-2. **把 bytes → DataFrame 的小工具放進檔案**：
-
-```python
-def load_schedule_from_bytes(csv_bytes: bytes) -> pd.DataFrame:
-    last_err = None
-    for enc in ("utf-8-sig", "utf-8", "cp950"):
-        try:
-            df = pd.read_csv(io.BytesIO(csv_bytes), encoding=enc)
-            break
-        except Exception as e:
-            last_err = e
-            df = None
-    if df is None:
-        raise RuntimeError(f"讀取 CSV 失敗：{last_err}")
-    if "週" in df.columns:
-        df["週"] = pd.to_numeric(df["週"], errors="coerce").fillna(0).astype(int)
-    if "節次" in df.columns:
-        df["節次"] = pd.to_numeric(df["節次"], errors="coerce").fillna(0).astype(int)
-    return df
-```
-
-> 以上兩段若已經在你檔案中，就不用再加。其餘後端內容（GCS 載入、樣板別名、合併儲存格等）維持你上一版即可。
-
----
-
-## 使用說明
-
-* **前端**：直接用上面完整 HTML，打開後設定週數，填 `gs://` 或上傳 CSV，按「產生並下載 .docx」。
-* **後端**：維持你的 Cloud Run 服務網址，前端的 `BACKEND_URL` 已預設為你的 URL；若未來改網址，前端改這一行即可。
