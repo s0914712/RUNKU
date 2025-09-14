@@ -1,563 +1,820 @@
+# 前端（整頁版 HTML）
+
+> 已把「下載 Word 課表」面板與 JS 整合到你的頁面：可輸入週數、二擇一提供 **gs\:// 路徑**或**直接上傳 CSV**，然後呼叫 Cloud Run 下載 `.docx`。
+
+```html
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-Hant">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>兒童跑酷學習遊戲</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #f0f0f0;
-            font-family: 'Comic Sans MS', cursive, sans-serif;
-        }
-        #gameCanvas {
-            display: block;
-            background-color: #87CEEB;
-            margin: 0 auto;
-            outline: none;
-        }
-        #score {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            font-size: 24px;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-        #timeDisplay {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 24px;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-        #gameOver {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 48px;
-            color: red;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-            display: none;
-        }
-        #restart {
-            position: absolute;
-            top: 60%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 24px;
-            color: white;
-            background-color: #4CAF50;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            display: none;
-        }
-        #wordChallenge {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 30px;
-            border-radius: 15px;
-            text-align: center;
-            display: none;
-            z-index: 100;
-            box-shadow: 0 0 25px rgba(0, 0, 0, 0.3);
-            width: 400px;
-            max-width: 90%;
-        }
-        #wordDisplay {
-            font-size: 48px;
-            margin-bottom: 20px;
-            color: #333;
-            font-weight: bold;
-        }
-        #speakButton {
-            font-size: 24px;
-            padding: 15px 30px;
-            background-color: #4285F4;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            margin: 20px 0;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        #speakButton:hover {
-            background-color: #3367D6;
-        }
-        #speakButton.mic-active {
-            background-color: #EA4335;
-            animation: pulse 1.5s infinite;
-        }
-        #textInput, #submitText {
-            display: none;
-            margin: 10px;
-            padding: 10px;
-            font-size: 16px;
-        }
-        #speechResult {
-            font-size: 20px;
-            margin: 15px 0;
-            min-height: 30px;
-            color: #555;
-        }
-        #hintText {
-            font-size: 18px;
-            color: #666;
-            margin-top: 20px;
-        }
-        #userInfo {
-            position: absolute;
-            top: 50px;
-            left: 10px;
-            font-size: 16px;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-        }
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        .mic-icon {
-            margin-right: 10px;
-            font-size: 30px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>課程排程器（當天備考輸入＋CSV 匯入/匯出＋反向更新 config）</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 12px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; vertical-align: middle; }
+    th { background: #f0f0f0; }
+    textarea { width: 100%; height: 150px; }
+    button { padding: 6px 12px; margin: 5px; }
+    #controls { margin-top: 10px; display: none; }
+    #summary { margin-top: 20px; }
+    #weekInput { width: 60px; }
+    .teacher-A { background-color: #e6f7ff; }
+    .teacher-B { background-color: #fff7e6; }
+    .teacher-C { background-color: #f0ffe6; }
+    .teacher-D { background-color: #f9e6ff; }
+    .teacher-E { background-color: #ffe6e6; }
+    .editable { cursor: pointer; }
+    .editable:hover { background-color: #f5f5f5 !important; }
+    #editPanel, #dailyNotesPanel { margin-top: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 8px; display: none; }
+    #editPanel select, #editPanel button, #editPanel input { margin-right: 10px; }
+    .settings-row { margin-bottom: 10px; }
+    .settings-row label { display: inline-block; width: 150px; }
+    .settings-row input { width: 60px; }
+    .muted { color:#888; font-size: 12px; }
+    .daily-notes-grid { width: 100%; border-collapse: collapse; }
+    .daily-notes-grid th, .daily-notes-grid td { border: 1px solid #ddd; padding: 6px; }
+    .daily-notes-grid th { background: #fafafa; }
+    .w-100 { width: 100%; }
+    .cell-wrap { line-height: 1.25; }
+    .cell-meta { display:block; margin-top:2px; font-size: 12px; color:#666; }
+    /* 下載 Word 面板 */
+    #downloadDocPanel { margin-top:20px; padding:12px; border:1px solid #ddd; border-radius:8px; }
+    #downloadDocPanel input[type="text"] { width: 380px; }
+  </style>
 </head>
 <body>
-    <div id="userInfo">歡迎, 訪客</div>
-    <div id="score">分數: 0</div>
-    <div id="timeDisplay">時間: 0:00</div>
-    <div id="gameOver">遊戲結束!</div>
-    <button id="restart">重新開始</button>
-    <div id="wordChallenge">
-        <div id="wordDisplay"></div>
-        <p>請說出單字以跳過障礙物！</p>
-        <button id="speakButton">
-            <span class="mic-icon">🎤</span> 開始錄音
-        </button>
-        <input type="text" id="textInput" placeholder="或輸入單字">
-        <button id="submitText">提交</button>
-        <div id="speechResult"></div>
-        <div id="hintText"></div>
+  <h2>課程排程器設定</h2>
+
+  <div class="settings-row">
+    <label>學期總週數:</label>
+    <input id="totalWeeks" type="number" min="1" max="52" value="40" />
+  </div>
+  <div class="settings-row">
+    <label>每週上課天數:</label>
+    <input id="totalDays" type="number" min="1" max="7" value="5" />
+  </div>
+  <div class="settings-row">
+    <label>每天節數:</label>
+    <input id="totalPeriods" type="number" min="1" max="10" value="6" />
+  </div>
+  <div class="settings-row">
+    <label>學期開始日期:</label>
+    <input id="startDate" type="date" value="2025-08-14" />
+  </div>
+
+  <p>請以 JSON 格式輸入課程設定，如：<br />
+  <code>[ { "name": "CAT", "teacher": "A", "totalHours": 50 }, ... ]</code></p>
+  <textarea id="config">[
+  { "name": "CAT",  "teacher": "A", "totalHours": 50, "location": "CDF", "note": "CAT備考" },
+  { "name": "PIG",  "teacher": "A", "totalHours": 20, "location": "ABC", "note": "PIG備考" },
+  { "name": "Dog",  "teacher": "A", "totalHours": 20 },
+  { "name": "edu",  "teacher": "A", "totalHours": 60 },
+  { "name": "Eye",  "teacher": "B", "totalHours": 10 },
+  { "name": "mouth","teacher": "B", "totalHours": 20 },
+  { "name": "ear",  "teacher": "B", "totalHours": 20 },
+  { "name": "light","teacher": "C", "totalHours": 20 },
+  { "name": "dark", "teacher": "C", "totalHours": 20 },
+  { "name": "gray", "teacher": "C", "totalHours": 20 }
+]</textarea>
+  <br />
+  <button onclick="initSchedule()">初始化並產生</button>
+  <div id="loading" style="display:none; margin: 10px;">處理中，請稍候...</div>
+
+  <div id="controls">
+    <button onclick="prevWeek()">上一週</button>
+    <span id="weekLabel"></span>
+    <button onclick="nextWeek()">下一週</button>
+    <label>週數：<input id="weekInput" type="number" min="1" /></label>
+    <button onclick="goWeek()">前往</button>
+    <button onclick="checkConflicts()">檢查衝突</button>
+    <button onclick="enableEditMode()">編輯模式</button>
+    <button onclick="openDailyNotesPanel()">當天備考</button>
+    <button onclick="exportCSV()">匯出 CSV</button>
+    <!-- 匯入 CSV + 反向更新 config -->
+    <button onclick="triggerImportCSV()">匯入 CSV</button>
+    <input id="csvFile" type="file" accept=".csv" style="display:none" onchange="handleImportCSV(event)" />
+  </div>
+
+  <div id="schedule"></div>
+
+  <!-- 單格編輯面板（保留） -->
+  <div id="editPanel">
+    <h3>編輯課程（單格）</h3>
+    <label>課程: <select id="editCourse"></select></label>
+    <label>教師: <select id="editTeacher"></select></label>
+    <div style="margin-top:8px;"></div>
+    <label>備考: <input id="editNote" placeholder="例如：本節臨時更換教室" style="width:320px;" /></label>
+    <button onclick="saveEdit()">儲存</button>
+    <button onclick="setToSelfStudy()">設為自習</button>
+    <button onclick="cancelEdit()">取消</button>
+  </div>
+
+  <!-- 當天備考面板（一次輸入整天的各節備考） -->
+  <div id="dailyNotesPanel">
+    <h3>當天備考</h3>
+    <div>
+      <label>選擇日：
+        <select id="dailyDaySelect" onchange="renderDailyNotesTable()"></select>
+      </label>
+      <span id="dailyDateLabel" style="margin-left:10px;color:#666"></span>
     </div>
-    <canvas id="gameCanvas" tabindex="1"></canvas>
+    <div id="dailyNotesTableWrapper"></div>
+    <div style="margin-top:10px;">
+      <button onclick="saveDailyNotes()">儲存當天備考</button>
+      <button onclick="closeDailyNotesPanel()">關閉</button>
+    </div>
+  </div>
 
-    <script>
-        // 遊戲變數
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const userInfoElement = document.getElementById('userInfo');
-        const scoreElement = document.getElementById('score');
-        const timeElement = document.getElementById('timeDisplay');
-        const gameOverElement = document.getElementById('gameOver');
-        const restartButton = document.getElementById('restart');
-        const wordChallenge = document.getElementById('wordChallenge');
-        const wordDisplay = document.getElementById('wordDisplay');
-        const speakButton = document.getElementById('speakButton');
-        const textInput = document.getElementById('textInput');
-        const submitText = document.getElementById('submitText');
-        const speechResult = document.getElementById('speechResult');
-        const hintText = document.getElementById('hintText');
+  <!-- 下載 Word（呼叫 Cloud Run 後端） -->
+  <div id="downloadDocPanel">
+    <h3>下載 Word 課表</h3>
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+      <label>週數：
+        <input id="dlWeek" type="number" min="1" value="1" style="width:80px;">
+      </label>
+      <label>gs:// CSV 路徑（選填，其一即可）：
+        <input id="dlGsPath" type="text" placeholder="gs://bucket/path/to.csv">
+      </label>
+      <label>或 上傳 CSV（其一即可）：
+        <input id="dlCsvFile" type="file" accept=".csv">
+      </label>
+      <button id="btnDownloadDoc">產生並下載 .docx</button>
+    </div>
+    <div id="dlMsg" style="margin-top:8px; color:#666;"></div>
+  </div>
 
-        // 設置畫布大小
-        canvas.width = 800;
-        canvas.height = 400;
+  <div id="summary"></div>
+  <div id="conflicts" style="display:none; margin-top: 20px; padding: 10px; background-color: #ffeeee; border: 1px solid #ffcccc;"></div>
 
-        // 遊戲狀態
-        let gameRunning = false;
-        let score = 0;
-        let speed = 3;
-        let gravity = 0.35;
-        let gameTime = 0;
-        let lastObstacleTime = 0;
-        let wordChallengeActive = false;
-        let currentWord = "";
-        let speechRecognizer;
-        let isRecording = false;
+<script>
+// ========= 後端 URL =========
+const BACKEND_URL = "https://classschedule-1087471739366.us-east4.run.app"; // ← 你的 Cloud Run 入口
 
-        // 英文單字列表
-        const wordList = [
-            { word: "apple", hint: "蘋果" },
-            { word: "banana", hint: "香蕉" },
-            { word: "turtle", hint: "烏龜" },
-            { word: "dog", hint: "狗" },
-            { word: "cat", hint: "貓" }
-        ];
+// ========= 新增：下載 Word 功能 =========
+document.getElementById('btnDownloadDoc').addEventListener('click', async () => {
+  const week = parseInt(document.getElementById('dlWeek').value || '1', 10);
+  const gsPath = (document.getElementById('dlGsPath').value || '').trim();
+  const file = document.getElementById('dlCsvFile').files[0];
+  const $msg = document.getElementById('dlMsg');
+  $msg.textContent = '處理中…';
 
-        // 玩家角色
-        const player = {
-            x: 100,
-            y: canvas.height - 100,
-            width: 60,
-            height: 60,
-            velocityY: 0,
-            jumping: false,
-            image: new Image(),
-            useImage: false
-        };
+  try {
+    let resp;
+    if (file) {
+      const fd = new FormData();
+      fd.append('week', String(week));
+      fd.append('csv', file, file.name);
+      resp = await fetch(BACKEND_URL, { method: 'POST', body: fd });
+    } else if (gsPath) {
+      resp = await fetch(BACKEND_URL, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ week, path: gsPath }),
+      });
+    } else {
+      $msg.textContent = '請填 gs:// 路徑或選擇 CSV 檔（二擇一）。';
+      return;
+    }
 
-        // 障礙物陣列
-        let obstacles = [];
+    if (!resp.ok) {
+      let errText = await resp.text();
+      try { const j = JSON.parse(errText); errText = j.error || errText; } catch {}
+      throw new Error(errText);
+    }
 
-        // 嘗試載入玩家圖片
-        player.image.onload = function() {
-            player.useImage = true;
-            console.log('角色圖片載入成功');
-        };
-        player.image.onerror = function() {
-            player.useImage = false;
-            console.log('無法載入角色圖片，將使用預設矩形代替');
-        };
-        player.image.src = 'character.png';
+    // 優先採用後端的檔名
+    let filename = `課程表_第${week}週.docx`;
+    const cd = resp.headers.get('Content-Disposition');
+    if (cd) {
+      const m = /filename\*?=([^;]+)/i.exec(cd);
+      if (m) {
+        const raw = m[1].trim().replace(/^UTF-8''/, '');
+        try { filename = decodeURIComponent(raw); } catch { filename = raw.replace(/["']/g,''); }
+      }
+    }
 
-        // 地面
-        const ground = {
-            y: canvas.height - 50,
-            height: 50
-        };
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+    $msg.textContent = '✅ 已下載：' + filename;
+  } catch (e) {
+    $msg.textContent = '❌ 失敗：' + (e.message || e);
+    console.error(e);
+  }
+});
 
-        // 初始化語音識別
-        function initSpeechRecognition() {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            if (!SpeechRecognition) {
-                console.warn('瀏覽器不支持語音識別，將使用文字輸入');
-                speakButton.style.display = 'none';
-                textInput.style.display = 'block';
-                submitText.style.display = 'block';
-                submitText.addEventListener('click', checkTextInput);
-                return null;
-            }
+// ========= 以下為你原本的邏輯（未改動） =========
+let weeks = 40;
+let days = ["Mon","Tue","Wed","Thu","Fri"];
+let periods = 6;
+let startDate = new Date(2025, 7, 14); // 月份0起
+let config = [];
+let courseWeekly = [];
+let currentWeek = 0;
+let scheduleData = [];
+let teacherColors = {};
+let editMode = false;
+let currentEditSlot = null;
 
-            const recognizer = new SpeechRecognition();
-            recognizer.lang = 'en-US';
-            recognizer.interimResults = false;
-            recognizer.maxAlternatives = 1;
+const totalMap = new Map();
+function makeKey(name, teacher){ return `${name}@@${teacher||''}`; }
 
-            recognizer.onstart = function() {
-                speakButton.classList.add('mic-active');
-                speechResult.textContent = "聆聽中...";
-                navigator.permissions.query({ name: 'microphone' }).then((result) => {
-                    if (result.state === 'denied') {
-                        speechResult.textContent = "麥克風權限被拒絕，請檢查瀏覽器設置";
-                        speakButton.classList.remove('mic-active');
-                        recognizer.stop();
-                    }
-                });
-            };
+function initSchedule() {
+  document.getElementById('loading').style.display = 'block';
+  updateSettings();
+  setTimeout(() => {
+    try {
+      config = JSON.parse(document.getElementById('config').value);
+      totalMap.clear();
+      config.forEach(c => totalMap.set(makeKey(c.name, c.teacher), c.totalHours || 0));
 
-            recognizer.onend = function() {
-                speakButton.classList.remove('mic-active');
-                isRecording = false;
-                speakButton.textContent = '開始錄音';
-            };
+      let colorIndex = 0;
+      const teachers = [...new Set(config.map(c => c.teacher))];
+      teachers.forEach(teacher => { teacherColors[teacher] = ['A','B','C','D','E'][colorIndex % 5]; colorIndex++; });
 
-            recognizer.onresult = function(event) {
-                const speech = event.results[0][0].transcript.toLowerCase().trim();
-                speechResult.textContent = `你說: "${speech}"`;
-                checkSpeechResult(speech);
-            };
+      buildCourseWeeklyFromConfig();
 
-            recognizer.onerror = function(event) {
-                console.error('語音識別錯誤:', event.error);
-                speechResult.textContent = "發生錯誤，請再試一次";
-                speakButton.classList.remove('mic-active');
-            };
+      scheduleData = Array.from({length: weeks}, () =>
+        Array.from({length: days.length}, () =>
+          Array.from({length: periods}, () => '自習')
+        )
+      );
 
-            return recognizer;
-        }
-
-        // 檢查語音輸入結果
-        function checkSpeechResult(speech) {
-            if (speech === currentWord || speech.includes(currentWord)) {
-                speechResult.innerHTML += '<br><span style="color:green;">✓ 正確!</span>';
-                console.log('單字正確，恢復遊戲');
-                setTimeout(() => {
-                    // 移除當前障礙物
-                    obstacles.shift();
-                    wordChallengeActive = false;
-                    wordChallenge.style.display = 'none';
-                    canvas.focus();
-                    gameRunning = true;
-                    player.velocityY = -12; // 觸發跳躍
-                    player.jumping = true;
-                    score += 10;
-                    scoreElement.textContent = `分數: ${score}`;
-                    lastObstacleTime = gameTime; // 重置障礙物計時
-                    console.log('障礙物移除，計時重置:', lastObstacleTime);
-                    console.log('gameRunning:', gameRunning, 'wordChallengeActive:', wordChallengeActive);
-                    // 直接調用 gameLoop 確保遊戲繼續
-                    requestAnimationFrame(gameLoop);
-                }, 1500);
-            } else {
-                speechResult.innerHTML += '<br><span style="color:red;">✗ 不對喔，再試一次!</span>';
-                hintText.textContent = `提示: ${wordList.find(w => w.word === currentWord).hint}`;
-            }
-        }
-
-        // 檢查文字輸入
-        function checkTextInput() {
-            const input = textInput.value.toLowerCase().trim();
-            speechResult.textContent = `你輸入: "${input}"`;
-            if (input === currentWord) {
-                speechResult.innerHTML += '<br><span style="color:green;">✓ 正確!</span>';
-                console.log('文字輸入正確，恢復遊戲');
-                setTimeout(() => {
-                    // 移除當前障礙物
-                    obstacles.shift();
-                    wordChallengeActive = false;
-                    wordChallenge.style.display = 'none';
-                    canvas.focus();
-                    gameRunning = true;
-                    player.velocityY = -12; // 觸發跳躍
-                    player.jumping = true;
-                    score += 10;
-                    scoreElement.textContent = `分數: ${score}`;
-                    lastObstacleTime = gameTime; // 重置障礙物計時
-                    console.log('障礙物移除，計時重置:', lastObstacleTime);
-                    console.log('gameRunning:', gameRunning, 'wordChallengeActive:', wordChallengeActive);
-                    // 直接調用 gameLoop 確保遊戲繼續
-                    requestAnimationFrame(gameLoop);
-                }, 1500);
-            } else {
-                speechResult.innerHTML += '<br><span style="color:red;">✗ 不對喔，再試一次!</span>';
-                hintText.textContent = `提示: ${wordList.find(w => w.word === currentWord).hint}`;
-            }
-        }
-
-        // 初始化遊戲
-        function initGame() {
-            speechRecognizer = initSpeechRecognition();
-            canvas.focus();
-            gameRunning = true;
-            setupControls();
-            requestAnimationFrame(gameLoop);
-        }
-
-        // 設置控制
-        function setupControls() {
-            document.addEventListener('keydown', function(e) {
-                if (!gameRunning && !wordChallengeActive && (e.code === 'Space' || e.key === ' ' || e.keyCode === 32)) {
-                    resetGame();
-                    e.preventDefault();
-                }
-            });
-
-            canvas.addEventListener('click', function() {
-                canvas.focus();
-            });
-
-            speakButton.addEventListener('click', function(e) {
-                e.preventDefault();
-                if (!wordChallengeActive || !speechRecognizer) return;
-                if (!isRecording) {
-                    speechResult.textContent = "";
-                    hintText.textContent = "";
-                    speechRecognizer.start();
-                    isRecording = true;
-                    speakButton.textContent = '停止錄音';
-                } else {
-                    speechRecognizer.stop();
-                    isRecording = false;
-                    speakButton.textContent = '開始錄音';
-                }
-            });
-
-            restartButton.addEventListener('click', resetGame);
-        }
-
-        // 遊戲主循環
-        let lastTime = 0;
-        function gameLoop(timestamp) {
-            if (!gameRunning) return;
-
-            // 確保 deltaTime 有效
-            const deltaTime = lastTime ? (timestamp - lastTime) : 16.67; // 預設 60fps
-            lastTime = timestamp;
-
-            if (!wordChallengeActive) {
-                gameTime += deltaTime / 1000;
-                const minutes = Math.floor(gameTime / 60) || 0;
-                const seconds = Math.floor(gameTime % 60) || 0;
-                timeElement.textContent = `時間: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-
-                update(deltaTime);
-                draw();
-            } else {
-                draw(); // 在單字挑戰時繼續繪製
-            }
-
-            requestAnimationFrame(gameLoop);
-        }
-
-        // 開始單字挑戰
-        function startWordChallenge() {
-            gameRunning = false;
-            wordChallengeActive = true;
-            const wordIndex = Math.floor(Math.random() * wordList.length);
-            currentWord = wordList[wordIndex].word;
-            wordDisplay.textContent = currentWord;
-            speechResult.textContent = "";
-            hintText.textContent = `提示: ${wordList[wordIndex].hint}`;
-            wordChallenge.style.display = 'block';
-            textInput.value = '';
-            console.log('單字挑戰開始，顯示界面');
-        }
-
-        // 更新遊戲狀態
-        function update(deltaTime) {
-            const timeFactor = deltaTime / (1000/60);
-            player.y += player.velocityY * timeFactor;
-            player.velocityY += gravity * timeFactor;
-
-            // 確保玩家不超出畫布
-            if (player.y + player.height > ground.y) {
-                player.y = ground.y - player.height;
-                player.velocityY = 0;
-                player.jumping = false;
-            }
-            if (player.y < 0) {
-                player.y = 0;
-                player.velocityY = 0;
-            }
-
-            // 每10秒生成一個障礙物
-            if (gameTime - lastObstacleTime >= 10 && obstacles.length === 0) {
-                createObstacle();
-                console.log('生成新障礙物，時間:', gameTime);
-            }
-
-            // 檢查是否接近障礙物
-            for (let i = 0; i < obstacles.length; i++) {
-                const distance = obstacles[i].x - (player.x + player.width);
-                if (distance > 0 && distance < 200 && !wordChallengeActive) {
-                    startWordChallenge();
-                    break;
-                }
-            }
-
-            if (!wordChallengeActive) {
-                for (let i = 0; i < obstacles.length; i++) {
-                    obstacles[i].x -= speed * timeFactor;
-                    if (checkCollision(player, obstacles[i])) {
-                        gameOver();
-                    }
-                    if (obstacles[i].x + obstacles[i].width < 0) {
-                        obstacles.splice(i, 1);
-                        i--;
-                        score++;
-                        scoreElement.textContent = `分數: ${score}`;
-                    }
-                }
-            }
-        }
-
-        // 繪製遊戲元素
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#87CEEB';
-            ctx.fillRect(0, 0, canvas.width, ground.y);
-            ctx.fillStyle = '#8B4513';
-            ctx.fillRect(0, ground.y, canvas.width, ground.height);
-
-            // 繪製玩家
-            if (player.useImage) {
-                ctx.drawImage(player.image, player.x, player.y, player.width, player.height);
-            } else {
-                ctx.fillStyle = '#FF6B6B';
-                ctx.beginPath();
-                ctx.roundRect(player.x, player.y, player.width, player.height, 10);
-                ctx.fill();
-                ctx.fillStyle = 'white';
-                ctx.beginPath();
-                ctx.arc(player.x + 20, player.y + 20, 8, 0, Math.PI * 2);
-                ctx.arc(player.x + 40, player.y + 20, 8, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = 'black';
-                ctx.beginPath();
-                ctx.arc(player.x + 20, player.y + 20, 4, 0, Math.PI * 2);
-                ctx.arc(player.x + 40, player.y + 20, 4, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.strokeStyle = 'black';
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.arc(player.x + 30, player.y + 30, 15, 0.1 * Math.PI, 0.9 * Math.PI);
-                ctx.stroke();
-            }
-
-            // 繪製障礙物
-            ctx.fillStyle = '#4CAF50';
-            for (const obstacle of obstacles) {
-                ctx.beginPath();
-                ctx.roundRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height, 5);
-                ctx.fill();
-            }
-        }
-
-        // 創建障礙物
-        function createObstacle() {
-            const height = 40 + Math.random() * 30;
-            const obstacle = {
-                x: canvas.width,
-                y: ground.y - height,
-                width: 40,
-                height: height
-            };
-            obstacles.push(obstacle);
-        }
-
-        // 檢測碰撞
-        function checkCollision(player, obstacle) {
-            return player.x < obstacle.x + obstacle.width &&
-                   player.x + player.width > obstacle.x &&
-                   player.y < obstacle.y + obstacle.height &&
-                   player.y + player.height > obstacle.y;
-        }
-
-        // 遊戲結束
-        function gameOver() {
-            gameRunning = false;
-            gameOverElement.style.display = 'block';
-            restartButton.style.display = 'block';
-            console.log(`最終分數: ${score}`);
-        }
-
-        // 重置遊戲
-        function resetGame() {
-            gameRunning = true;
-            score = 0;
-            speed = 3;
-            gameTime = 0;
-            lastObstacleTime = 0;
-            obstacles = [];
-            player.y = canvas.height - 100;
-            player.velocityY = 0;
-            player.jumping = false;
-            scoreElement.textContent = `分數: 0`;
-            timeElement.textContent = `時間: 0:00`;
-            gameOverElement.style.display = 'none';
-            restartButton.style.display = 'none';
-            wordChallengeActive = false;
-            wordChallenge.style.display = 'none';
-            canvas.focus();
-            lastTime = 0;
-            requestAnimationFrame(gameLoop);
-        }
-
-        // 頁面載入時初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            initGame();
+      for (let week = 0; week < weeks; week++) {
+        let bag = [];
+        courseWeekly.forEach(course => {
+          const hours = course.weekly[week];
+          for (let i = 0; i < hours; i++) {
+            const base = config.find(c => c.name === course.name && c.teacher === course.teacher) || {};
+            bag.push({ name: course.name, teacher: course.teacher, location: base.location || '', note: base.note || (course.name + '備考') });
+          }
         });
-    </script>
+        bag = shuffleArray(bag);
+        let idx = 0;
+        for (let d = 0; d < days.length && idx < bag.length; d++) {
+          for (let p = 0; p < periods && idx < bag.length; p++) {
+            scheduleData[week][d][p] = bag[idx++];
+          }
+        }
+      }
+
+      currentWeek = 0;
+      document.getElementById('controls').style.display = 'block';
+      document.getElementById('weekInput').value = 1;
+      document.getElementById('weekInput').max = weeks;
+      renderSchedule();
+
+      const daySel = document.getElementById('dailyDaySelect');
+      daySel.innerHTML = '';
+      days.forEach((d, i) => { const opt = document.createElement('option'); opt.value = i; opt.textContent = d; daySel.appendChild(opt); });
+
+    } catch (e) {
+      alert('初始化錯誤: ' + e.message);
+      console.error(e);
+    } finally { document.getElementById('loading').style.display = 'none'; }
+  }, 100);
+}
+
+function updateSettings() {
+  weeks = parseInt(document.getElementById('totalWeeks').value) || 40;
+  const newDaysCount = parseInt(document.getElementById('totalDays').value) || 5;
+  periods = parseInt(document.getElementById('totalPeriods').value) || 6;
+  const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  days = dayNames.slice(0, newDaysCount);
+  const dateStr = document.getElementById('startDate').value;
+  if (dateStr) { const [y,m,d] = dateStr.split('-').map(Number); startDate = new Date(y, m-1, d); }
+}
+
+function buildCourseWeeklyFromConfig(){
+  courseWeekly = config.map(c => {
+    const th = Number(c.totalHours || 0);
+    const base = Math.floor(th / weeks);
+    const rem  = th % weeks;
+    const weeklyHours = Array.from({length: weeks}, (_,i)=> base + (i < rem ? 1 : 0));
+    return { name: c.name, teacher: c.teacher, weekly: weeklyHours, totalHours: th };
+  });
+}
+
+function shuffleArray(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+function getTotalHours(name, teacher){
+  const key = makeKey(name, teacher);
+  if (totalMap.has(key)) return totalMap.get(key);
+  const c = config.find(x => x.name === name && x.teacher === teacher);
+  return c ? (c.totalHours || 0) : 0;
+}
+
+function countSoFar(name, teacher, uptoWeek, uptoDay, uptoPeriod){
+  let cnt = 0;
+  for (let w = 0; w <= uptoWeek; w++){
+    for (let d = 0; d < days.length; d++){
+      if (w === uptoWeek && d > uptoDay) break;
+      for (let p = 0; p < periods; p++){
+        if (w === uptoWeek && d === uptoDay && p > uptoPeriod) break;
+        const s = scheduleData[w][d][p];
+        if (s && typeof s === 'object' && s.name === name && s.teacher === teacher){ cnt++; }
+      }
+    }
+  }
+  return cnt;
+}
+
+function renderSchedule(){
+  const weekStart = new Date(startDate); weekStart.setDate(startDate.getDate() + currentWeek*7);
+  let header = '<tr><th>時段</th>';
+  days.forEach((d,i)=>{ const dd = new Date(weekStart); dd.setDate(weekStart.getDate()+i); header += `<th>${d} ${dd.getMonth()+1}/${dd.getDate()}</th>`; });
+  header += '</tr>';
+  let body='';
+  for(let p=0;p<periods;p++){
+    body += `<tr><td>第${p+1}節</td>`;
+    for(let d=0; d<days.length; d++){
+      const slot = scheduleData[currentWeek][d][p];
+      let html='自習', cls='';
+      if(slot && typeof slot==='object'){
+        const total = getTotalHours(slot.name, slot.teacher);
+        const cur   = countSoFar(slot.name, slot.teacher, currentWeek, d, p);
+        const hoursLabel = total ? `${cur}/${total}` : String(cur);
+        cls = `teacher-${teacherColors[slot.teacher]||''}`;
+        html = `<div class="cell-wrap"><div>${slot.name} (${slot.teacher})</div><span class="cell-meta">${hoursLabel}</span></div>`;
+      }
+      if(editMode){ cls+=' editable'; body += `<td class="${cls}" onclick="prepareEdit(${d},${p})">${html}</td>`; }
+      else { body += `<td class="${cls}">${html}</td>`; }
+    }
+    body += '</tr>';
+  }
+  document.getElementById('schedule').innerHTML = `<table>${header}${body}</table>`;
+  updateStatistics();
+}
+
+function updateStatistics(){
+  const weekSchedule = scheduleData[currentWeek];
+  const teacherHours = {}; const courseHours = {};
+  for(let d=0; d<days.length; d++){
+    for(let p=0; p<periods; p++){
+      const slot = weekSchedule[d][p];
+      if(slot && typeof slot==='object'){
+        teacherHours[slot.teacher] = (teacherHours[slot.teacher]||0)+1;
+        courseHours[slot.name]   = (courseHours[slot.name]||0)+1;
+      }
+    }
+  }
+  const actualWeeklyHours = {}; courseWeekly.forEach(c=> actualWeeklyHours[c.name]=0 );
+  for(let w=0; w<=currentWeek; w++){
+    for(let d=0; d<days.length; d++){
+      for(let p=0; p<periods; p++){
+        const slot = scheduleData[w][d][p];
+        if(slot && typeof slot==='object' && actualWeeklyHours[slot.name]!==undefined){ actualWeeklyHours[slot.name]++; }
+      }
+    }
+  }
+  let html = '<h3>本週課程統計</h3>';
+  html += `<p>總時數: ${days.length*periods} 小時 (${periods}節/天 × ${days.length}天)</p>`;
+  html += '<h4>課程時數:</h4><ul>'; for(const c in courseHours){ html+=`<li>${c}: ${courseHours[c]} 小時</li>`; } html+='</ul>';
+  html += '<h4>教師時數:</h4><ul>'; for(const t in teacherHours){ html+=`<li>${t}: ${teacherHours[t]} 小時</li>`; } html+='</ul>';
+  html += '<h3>累計進度</h3><ul>';
+  courseWeekly.forEach(course => {
+    const planned = course.weekly.slice(0,currentWeek+1).reduce((a,b)=>a+b,0);
+    const actual  = actualWeeklyHours[course.name]||0;
+    const total   = course.totalHours || 0;
+    const pp = total ? Math.round((planned/total)*100) : 0;
+    const ap = total ? Math.round((actual/total)*100) : 0;
+    html += `<li>${course.name}: <span title="計劃時數">${planned}/${total}</span> (${pp}%) | <span title="實際時數" style="color:${actual<planned?'red':'green'}">${actual}/${total}</span> (${ap}%)</li>`;
+  });
+  html += '</ul>';
+  document.getElementById('summary').innerHTML = html;
+  document.getElementById('weekLabel').textContent = `第 ${currentWeek+1} 週`;
+  document.getElementById('conflicts').style.display = 'none';
+}
+
+function enableEditMode(){ editMode=!editMode; renderSchedule(); document.querySelector('#controls button[onclick="enableEditMode()" ]').textContent = editMode?'退出編輯':'編輯模式'; }
+
+function prepareEdit(day, period){
+  if(!editMode) return;
+  currentEditSlot = {day, period};
+  const slot = scheduleData[currentWeek][day][period];
+  const courseSelect = document.getElementById('editCourse'); courseSelect.innerHTML='';
+  [...new Set(config.map(c=>c.name))].forEach(name=>{ const opt=document.createElement('option'); opt.value=name; opt.textContent=name; courseSelect.appendChild(opt); });
+  const teacherSelect = document.getElementById('editTeacher'); teacherSelect.innerHTML='';
+  [...new Set(config.map(c=>c.teacher))].forEach(t=>{ const opt=document.createElement('option'); opt.value=t; opt.textContent=t; teacherSelect.appendChild(opt); });
+  document.getElementById('editNote').value = (slot && slot.note) || '';
+  if(slot && typeof slot==='object'){ courseSelect.value = slot.name; teacherSelect.value = slot.teacher; }
+  document.getElementById('editPanel').style.display='block';
+}
+
+function saveEdit(){
+  if(!currentEditSlot) return;
+  const course  = document.getElementById('editCourse').value;
+  const teacher = document.getElementById('editTeacher').value;
+  const note    = document.getElementById('editNote').value.trim();
+  scheduleData[currentWeek][currentEditSlot.day][currentEditSlot.period] = {
+    name: course,
+    teacher,
+    location: (config.find(c=>c.name===course && c.teacher===teacher)?.location)||'',
+    note: note || (course+'備考')
+  };
+  cancelEdit(); renderSchedule();
+}
+
+function setToSelfStudy(){ if(!currentEditSlot) return; scheduleData[currentWeek][currentEditSlot.day][currentEditSlot.period]='自習'; cancelEdit(); renderSchedule(); }
+function cancelEdit(){ currentEditSlot=null; document.getElementById('editPanel').style.display='none'; }
+
+function openDailyNotesPanel(){ document.getElementById('dailyNotesPanel').style.display='block'; renderDailyNotesTable(); }
+function closeDailyNotesPanel(){ document.getElementById('dailyNotesPanel').style.display='none'; }
+
+function renderDailyNotesTable(){
+  const dayIndex = parseInt(document.getElementById('dailyDaySelect').value || '0');
+  const weekStart = new Date(startDate); weekStart.setDate(startDate.getDate() + currentWeek*7 + dayIndex);
+  document.getElementById('dailyDateLabel').textContent = `日期：${weekStart.getMonth()+1}/${weekStart.getDate()}`;
+  let html = '<table class="daily-notes-grid"><tr><th>節次</th><th>課程</th><th>教師</th><th>備考（此日）</th></tr>';
+  for(let p=0; p<periods; p++){
+    const slot = scheduleData[currentWeek][dayIndex][p];
+    const name = (slot && typeof slot==='object') ? slot.name : '自習';
+    const tch  = (slot && typeof slot==='object') ? (slot.teacher||'') : '';
+    const val  = (slot && typeof slot==='object') ? (slot.note||'') : '';
+    html += `<tr>
+      <td>第${p+1}節</td>
+      <td>${name}</td>
+      <td>${tch}</td>
+      <td><input class='w-100' id='dailyNote_${p}' value='${escapeHtml(val)}' placeholder='輸入此節備考（僅此日生效）' /></td>
+    </tr>`;
+  }
+  html += '</table>';
+  document.getElementById('dailyNotesTableWrapper').innerHTML = html;
+}
+
+function saveDailyNotes(){
+  const dayIndex = parseInt(document.getElementById('dailyDaySelect').value || '0');
+  for(let p=0; p<periods; p++){
+    const slot = scheduleData[currentWeek][dayIndex][p];
+    if(slot && typeof slot==='object'){
+      const v = document.getElementById(`dailyNote_${p}`).value.trim();
+      slot.note = v;
+    }
+  }
+  alert('已儲存當天備考');
+}
+
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+
+function checkConflicts(){
+  const conflicts = {}; const weekSchedule = scheduleData[currentWeek];
+  for(let d=0; d<days.length; d++){
+    const teacherPeriods = {};
+    for(let p=0; p<periods; p++){
+      const slot = weekSchedule[d][p];
+      if(slot && typeof slot==='object'){
+        if(teacherPeriods[slot.teacher] && teacherPeriods[slot.teacher].includes(p)){
+          if(!conflicts[slot.teacher]) conflicts[slot.teacher]=[];
+          conflicts[slot.teacher].push({ day: days[d], period: p+1, course: slot.name, type: '重複時段' });
+        } else { (teacherPeriods[slot.teacher] = teacherPeriods[slot.teacher] || []).push(p); }
+      }
+    }
+  }
+  let html='<h3>衝突檢查結果</h3>';
+  if(Object.keys(conflicts).length===0) html+='<p>沒有發現衝突</p>';
+  else { for(const t in conflicts){ html+=`<h4>教師 ${t} 的衝突:</h4><ul>`; conflicts[t].forEach(c=>{ html+=`<li>${c.day} 第${c.period}節 - ${c.course}: ${c.type}</li>`; }); html+='</ul>'; } }
+  document.getElementById('conflicts').innerHTML=html; document.getElementById('conflicts').style.display='block';
+}
+
+function prevWeek(){ if(currentWeek>0){ currentWeek--; renderSchedule(); } }
+function nextWeek(){ if(currentWeek<weeks-1){ currentWeek++; renderSchedule(); } }
+function goWeek(){ const n=parseInt(document.getElementById('weekInput').value); if(!isNaN(n)&&n>=1&&n<=weeks){ currentWeek=n-1; renderSchedule(); } else { alert(`請輸入 1 到 ${weeks} 之間的數字`); } }
+
+function exportCSV(){
+  const headers = ['週','日','節次','課程','教師','時數','地點','備考'];
+  const rows = [headers];
+  const counter = new Map();
+  for(let w=0; w<weeks; w++){
+    for(let d=0; d<days.length; d++){
+      for(let p=0; p<periods; p++){
+        const slot = scheduleData[w][d][p];
+        if(slot && typeof slot==='object'){
+          const key   = makeKey(slot.name, slot.teacher);
+          const total = getTotalHours(slot.name, slot.teacher);
+          const cur   = (counter.get(key)||0) + 1;
+          counter.set(key, cur);
+          const hoursLabel = total ? `${cur}/${total}` : String(cur);
+          rows.push([
+            String(w+1), days[d], String(p+1),
+            slot.name||'', slot.teacher||'', hoursLabel,
+            slot.location||'', slot.note || (slot.name? (slot.name+'備考') : '')
+          ]);
+        }
+      }
+    }
+  }
+  const csv = "\uFEFF" + rows.map(r=> r.map(csvEscape).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='schedule.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+function csvEscape(v){ const s = (v==null? '' : String(v)); return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+
+function triggerImportCSV(){ const f = document.getElementById('csvFile'); if (!f) return alert('找不到匯入元件'); f.value = ''; f.click(); }
+
+async function handleImportCSV(evt){
+  const file = evt.target.files && evt.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const rows = parseCSV(text);
+    if(rows.length === 0) throw new Error('CSV 為空');
+
+    const header = rows[0].map(h=>h.trim());
+    const idx = {
+      week: header.indexOf('週'),
+      day:  header.indexOf('日'),
+      period: header.indexOf('節次'),
+      name: header.indexOf('課程'),
+      teacher: header.indexOf('教師'),
+      hours: header.indexOf('時數'),
+      location: header.indexOf('地點'),
+      note: header.indexOf('備考')
+    };
+    if(idx.week<0 || idx.day<0 || idx.period<0 || idx.name<0 || idx.teacher<0){
+      throw new Error('找不到必要欄位：至少需含「週 / 日 / 節次 / 班別/課程 / 教師」');
+    }
+
+    let needWeeks = weeks;       
+    let needDays  = days.length; 
+    let needPeriods = periods;   
+
+    const dayIndexOf = (v)=>{
+      const s = String(v).trim();
+      let k = days.indexOf(s); if(k>=0) return k;
+      const mapEn = {Mon:0,Tue:1,Wed:2,Thu:3,Fri:4,Sat:5,Sun:6};
+      if(mapEn[s] != null && mapEn[s] < days.length) return mapEn[s];
+      const mapZh = {'一':0,'二':1,'三':2,'四':3,'五':4,'六':5,'日':6,'天':6};
+      if(mapZh[s] != null && mapZh[s] < days.length) return mapZh[s];
+      const n = Number(s); if(Number.isInteger(n) && n>=1 && n<=days.length) return n-1;
+      return -1;
+    };
+
+    for(let r=1; r<rows.length; r++){
+      const row = rows[r]; if(!row || row.length===0) continue;
+      const w = Math.max(1, parseInt(row[idx.week]||'0',10)) - 1;
+      const d = dayIndexOf(row[idx.day]);
+      const p = Math.max(1, parseInt(row[idx.period]||'0',10)) - 1;
+      if(isNaN(w) || isNaN(p) || d<0) continue;
+      needWeeks   = Math.max(needWeeks, w+1);
+      needDays    = Math.max(needDays,  d+1);
+      needPeriods = Math.max(needPeriods, p+1);
+    }
+
+    ensureSize(needWeeks, needDays, needPeriods);
+
+    const observed = new Map();
+    const parseTotal = (s)=>{
+      if(typeof s!== 'string') s = String(s||'');
+      const m = s.match(/\b(\d+)\s*\/\s*(\d+)\b/);
+      if(m) return Number(m[2]);
+      return null;
+    };
+
+    let applied = 0;
+    for(let r=1; r<rows.length; r++){
+      const row = rows[r]; if(!row || row.length===0) continue;
+      const w = Math.max(1, parseInt(row[idx.week]||'0',10)) - 1;
+      const d = dayIndexOf(row[idx.day]);
+      const p = Math.max(1, parseInt(row[idx.period]||'0',10)) - 1;
+      if(isNaN(w) || isNaN(p) || d<0) continue;
+
+      const name = String(row[idx.name]||'').trim();
+      const teacher = String(row[idx.teacher]||'').trim();
+      const location = idx.location>=0 ? String(row[idx.location]||'').trim() : '';
+      const note = idx.note>=0 ? String(row[idx.note]||'').trim() : '';
+      const hoursStr = idx.hours>=0 ? String(row[idx.hours]||'').trim() : '';
+
+      if(!name || name==='自習'){
+        scheduleData[w][d][p] = '自習';
+      }else{
+        const fromCfg = config.find(c => c.name===name && c.teacher===teacher) || {};
+        scheduleData[w][d][p] = {
+          name,
+          teacher,
+          location: fromCfg.location || location || '',
+          note: note || (name + '備考')
+        };
+      }
+      applied++;
+
+      if(name && name!=='自習'){
+        const key = makeKey(name, teacher);
+        const o = observed.get(key) || { count:0, totalParsed:null, location:'', note:'' };
+        o.count += 1;
+        const tot = parseTotal(hoursStr);
+        if(tot!=null) o.totalParsed = tot;
+        if(location && !o.location) o.location = location;
+        if(note && !o.note) o.note = note;
+        observed.set(key, o);
+      }
+    }
+
+    const csvTeachers = collectTeachersFromSchedule();
+    let colorIndex = 0;
+    [...new Set([...new Set(config.map(c=>c.teacher)), ...csvTeachers])].forEach(t=>{
+      if(!teacherColors[t]){ teacherColors[t] = ['A','B','C','D','E'][colorIndex % 5]; colorIndex++; }
+    });
+
+    syncConfigFromObserved(observed);
+
+    totalMap.clear();
+    config.forEach(c => totalMap.set(makeKey(c.name, c.teacher), c.totalHours || 0));
+    buildCourseWeeklyFromConfig();
+
+    renderSchedule();
+    document.getElementById('config').value = JSON.stringify(config, null, 2);
+
+    alert(`匯入完成，共套用 ${applied} 筆；已反向更新 config（包含新課程/教師與 totalHours/location/note 補齊）。`);
+  }catch(err){
+    console.error(err);
+    alert('匯入失敗：' + err.message);
+  }
+}
+
+function syncConfigFromObserved(observed){
+  const cfgMap = new Map();
+  config.forEach((c, i)=> cfgMap.set(makeKey(c.name, c.teacher), i));
+
+  observed.forEach((o, key)=>{
+    const [name, teacher] = key.split('@@');
+    const existIdx = cfgMap.get(key);
+    if(existIdx==null){
+      const totalHours = (o.totalParsed!=null ? o.totalParsed : o.count);
+      config.push({ name, teacher, totalHours, location: o.location || '', note: o.note || `${name}備考` });
+    }else{
+      const item = config[existIdx];
+      if(o.totalParsed!=null) item.totalHours = o.totalParsed;
+      if(!item.location && o.location) item.location = o.location;
+      if(!item.note && o.note) item.note = o.note;
+    }
+  });
+}
+
+function parseCSV(text){
+  if(text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const rows = []; let row = []; let field = ''; let inQuotes = false;
+  for(let i=0;i<text.length;i++){
+    const ch = text[i];
+    if(inQuotes){
+      if(ch === '"'){
+        const next = text[i+1];
+        if(next === '"'){ field += '"'; i++; } else { inQuotes = false; }
+      }else{ field += ch; }
+    }else{
+      if(ch === '"'){ inQuotes = true; }
+      else if(ch === ','){ row.push(field); field = ''; }
+      else if(ch === '\r'){ }
+      else if(ch === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+      else { field += ch; }
+    }
+  }
+  if(field.length>0 || inQuotes || row.length>0){ row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(x => String(x).trim() !== ''));
+}
+
+function ensureSize(newWeeks, newDays, newPeriods){
+  if(newWeeks > weeks){
+    for(let w = weeks; w < newWeeks; w++){
+      scheduleData[w] = Array.from({length: days.length}, () =>
+        Array.from({length: periods}, () => '自習')
+      );
+    }
+    weeks = newWeeks;
+    document.getElementById('totalWeeks').value = weeks;
+    document.getElementById('weekInput').max = weeks;
+  }
+  if(newDays > days.length){
+    const dayNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    days = dayNames.slice(0, newDays);
+    document.getElementById('totalDays').value = newDays;
+    for(let w=0; w<weeks; w++){
+      const need = newDays - scheduleData[w].length;
+      for(let i=0; i<need; i++){
+        scheduleData[w].push(Array.from({length: periods}, () => '自習'));
+      }
+    }
+    const daySel = document.getElementById('dailyDaySelect');
+    if(daySel){ daySel.innerHTML = ''; days.forEach((d, i) => { const opt = document.createElement('option'); opt.value = i; opt.textContent = d; daySel.appendChild(opt); }); }
+  }
+  if(newPeriods > periods){
+    for(let w=0; w<weeks; w++){
+      for(let d=0; d<days.length; d++){
+        const need = newPeriods - scheduleData[w][d].length;
+        for(let i=0; i<need; i++) scheduleData[w][d].push('自習');
+      }
+    }
+    periods = newPeriods;
+    document.getElementById('totalPeriods').value = periods;
+  }
+}
+
+function collectTeachersFromSchedule(){
+  const set = new Set();
+  for(let w=0; w<scheduleData.length; w++){
+    const week = scheduleData[w]; if(!week) continue;
+    for(let d=0; d<week.length; d++){
+      const day = week[d]; if(!day) continue;
+      for(let p=0; p<day.length; p++){
+        const slot = day[p];
+        if(slot && typeof slot === 'object' && slot.teacher){ set.add(slot.teacher); }
+      }
+    }
+  }
+  return set;
+}
+
+window.onload = function(){
+  const t=new Date();
+  const yyyy=t.getFullYear(); const mm=String(t.getMonth()+1).padStart(2,'0'); const dd=String(t.getDate()).padStart(2,'0');
+  document.getElementById('startDate').value = `${yyyy}-${mm}-${dd}`;
+};
+</script>
 </body>
 </html>
+```
+
+---
+
+# 後端（Cloud Run / Functions Framework）修訂重點
+
+> 你原始的 `main.py` 已完成：支援 **JSON `gs://` 路徑** 與 **`multipart/form-data` 上傳 CSV**；也包含 **CORS**、樣板週前綴自動偵測、合併儲存格等。下面是你只需要「補上的差異」：
+
+1. **CORS + multipart 支援**：
+
+```python
+# 在最上面補這個工具函式（把回應加上 CORS）
+def with_cors(resp):
+    resp.headers["Access-Control-Allow-Origin"] = "*"
+    return resp
+
+@functions_framework.http
+def generate_schedule(request):
+    # --- CORS 預檢 ---
+    if request.method == "OPTIONS":
+        resp = make_response("", 204)
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        resp.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+        resp.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        resp.headers["Access-Control-Max-Age"] = "3600"
+        return resp
+
+    try:
+        req_json = request.get_json(silent=True) or {}
+        req_args = request.args or {}
+        week_num = int(req_json.get("week") or req_args.get("week") or request.form.get("week") or 1)
+
+        df = None
+        # A. 若是 multipart 上傳 CSV
+        if request.files and "csv" in request.files:
+            csv_file = request.files["csv"]
+            df = load_schedule_from_bytes(csv_file.read())
+
+        # B. 否則走 JSON 的 gs:// 路徑
+        if df is None:
+            csv_path = req_json.get("path") or req_args.get("path") or request.form.get("path")
+            if not csv_path:
+                return with_cors(make_response((json.dumps({"error": "請提供上傳 CSV 或 gs:// CSV 路徑"}, ensure_ascii=False), 400, {"Content-Type": "application/json; charset=utf-8"})))
+            df = load_schedule(csv_path)
+
+        # ...（後面照你現有的：build_context_for_week → 偵測樣板週別 → render → merge → 回傳）...
+        # 最後回傳前：
+        return with_cors(resp)
+
+    except Exception as e:
+        # 錯誤時也加 CORS
+        return with_cors(make_response((json.dumps({"error": str(e)}, ensure_ascii=False), 500, {"Content-Type": "application/json; charset=utf-8"})))
+```
+
+2. **把 bytes → DataFrame 的小工具放進檔案**：
+
+```python
+def load_schedule_from_bytes(csv_bytes: bytes) -> pd.DataFrame:
+    last_err = None
+    for enc in ("utf-8-sig", "utf-8", "cp950"):
+        try:
+            df = pd.read_csv(io.BytesIO(csv_bytes), encoding=enc)
+            break
+        except Exception as e:
+            last_err = e
+            df = None
+    if df is None:
+        raise RuntimeError(f"讀取 CSV 失敗：{last_err}")
+    if "週" in df.columns:
+        df["週"] = pd.to_numeric(df["週"], errors="coerce").fillna(0).astype(int)
+    if "節次" in df.columns:
+        df["節次"] = pd.to_numeric(df["節次"], errors="coerce").fillna(0).astype(int)
+    return df
+```
+
+> 以上兩段若已經在你檔案中，就不用再加。其餘後端內容（GCS 載入、樣板別名、合併儲存格等）維持你上一版即可。
+
+---
+
+## 使用說明
+
+* **前端**：直接用上面完整 HTML，打開後設定週數，填 `gs://` 或上傳 CSV，按「產生並下載 .docx」。
+* **後端**：維持你的 Cloud Run 服務網址，前端的 `BACKEND_URL` 已預設為你的 URL；若未來改網址，前端改這一行即可。
