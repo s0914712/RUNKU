@@ -1,23 +1,63 @@
-# RUNKU 單字庫
-# 格式: 中文-英文 或 英文-中文
+# RUNKU Words Database
+# ============================
+# How to add words:
+#
+#   [Category Name]       <-- new category (use any name you like)
+#   type: japanese         <-- word type: "japanese" or "english"
+#
+#   Japanese format:  word | romaji | meaning | example_jp | example_zh
+#   English format:   english | chinese
+#
+#   - Lines starting with # are comments (ignored)
+#   - Empty lines are ignored
+#   - Use | to separate fields
+# ============================
 
-開放-open
-學習-learn
-挑戰-challenge
-成功-success
-努力-effort
-目標-goal
-進步-progress
-練習-practice
-記憶-memory
-理解-understand
-應用-apply
-掌握-master
-複習-review
-測驗-test
-分數-score
-等級-level
-經驗-experience
-技能-skill
-知識-knowledge
-智慧-wisdom
+[Shopping / 購物常用語]
+type: japanese
+いくら | Ikura | 多少錢 | これはいくらですか？ | 這多少錢？
+免税 | Menzei | 免稅 | 免税はできますか？ | 可以免稅嗎？
+試着 | Shichaku | 試穿 | これを試着してもいいですか？ | 這可以試穿嗎？
+在庫 | Zaiko | 庫存 | これの在庫はありますか？ | 這還有存貨嗎？
+袋 | Fukuro | 袋子 | 袋をいただけますか？ | 可以給我一個袋子嗎？
+お会計 | Okaikei | 結帳 | お会計をお願いします。 | 麻煩結帳。
+割引 | Waribiki | 折扣 | 割引はありますか？ | 有折扣嗎？
+現金 | Genkin | 現金 | 現金で払います。 | 用現金支付。
+カード | Kādo | 信用卡 | クレジットカードは使えますか？ | 可以使用信用卡嗎？
+返品 | Henpin | 退貨 | 返品は可能ですか？ | 可以退貨嗎？
+
+[Greetings / 打招呼與日常用語]
+type: japanese
+おはよう | Ohayō | 早安 | おはようございます。 | 早安。（正式說法）
+こんにちは | Konnichiwa | 午安 | こんにちは、お元気ですか？ | 你好，你好嗎？
+こんばんは | Konbanwa | 晚安（見面用） | 皆さん、こんばんは。 | 各位，晚上好。
+おやすみ | Oyasumi | 晚安（睡前用） | 疲れたので、もうおやすみなさい。 | 累了，先去睡了，晚安。
+ありがとう | Arigatō | 謝謝 | いつもありがとうございます。 | 一直以來都非常感謝。
+すみません | Sumimasen | 不好意思／對不起 | すみません、ちょっといいですか？ | 不好意思，可以打擾一下嗎？
+さようなら | Sayōnara | 再見 | では、さようなら。 | 那麼，再見了。
+始めまして | Hajimemashite | 初次見面 | 始めまして、どうぞよろしく。 | 初次見面，請多指教。
+お疲れ様 | Otsukaresama | 辛苦了 | 今日はお疲れ様でした。 | 今天辛苦了。
+お願いします | Onegaishimasu | 拜託了／請 | これをお願いします。 | 麻煩請給我這個 / 請幫我處理這個。
+
+[Basic English / 基礎英文]
+type: english
+open | 開放
+learn | 學習
+challenge | 挑戰
+success | 成功
+effort | 努力
+goal | 目標
+progress | 進步
+practice | 練習
+memory | 記憶
+understand | 理解
+apply | 應用
+master | 掌握
+review | 複習
+test | 測驗
+score | 分數
+level | 等級
+experience | 經驗
+skill | 技能
+knowledge | 知識
+wisdom | 智慧

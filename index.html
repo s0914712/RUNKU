@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RUNKU - Japanese Vocabulary Practice</title>
+  <title>RUNKU - Vocabulary Practice</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -41,7 +41,7 @@
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 20px; height: 60px;
     }
-    .logo { font-size: 22px; font-weight: 800; color: var(--primary); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .logo { font-size: 22px; font-weight: 800; color: var(--primary); text-decoration: none; cursor: pointer; }
     .nav-links { display: flex; gap: 6px; }
     .nav-btn {
       background: none; border: none; cursor: pointer;
@@ -53,6 +53,11 @@
 
     /* ===== MAIN ===== */
     .container { max-width: 960px; margin: 0 auto; padding: 24px 20px 60px; }
+
+    /* ===== LOADING ===== */
+    .loading { text-align: center; padding: 80px 20px; }
+    .spinner { width: 48px; height: 48px; border: 4px solid #E5E7EB; border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ===== HOME PAGE ===== */
     .hero { text-align: center; padding: 48px 0 32px; }
@@ -73,7 +78,7 @@
     .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 40px; }
     .feature-card {
       border-radius: var(--radius); padding: 32px; color: #fff; cursor: pointer;
-      transition: transform .2s, box-shadow .2s; text-decoration: none;
+      transition: transform .2s, box-shadow .2s;
     }
     .feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.15); }
     .feature-card .icon { font-size: 48px; margin-bottom: 12px; }
@@ -109,6 +114,12 @@
     }
     .speak-btn-sm:hover { background: #EFF6FF; }
     .example-text { font-size: 13px; color: var(--text-light); margin-top: 4px; line-height: 1.5; }
+    .type-badge {
+      display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 700;
+      margin-left: 6px; vertical-align: middle;
+    }
+    .type-badge.jp { background: #DBEAFE; color: #1D4ED8; }
+    .type-badge.en { background: #D1FAE5; color: #065F46; }
 
     /* ===== FLASHCARD PAGE ===== */
     .fc-progress { text-align: center; color: var(--text-light); margin-bottom: 8px; font-size: 14px; }
@@ -131,6 +142,7 @@
     .fc-back { transform: rotateY(180deg); justify-content: flex-start; align-items: stretch; }
     .fc-front .jp { font-size: 56px; font-weight: 800; margin-bottom: 12px; }
     .fc-front .hint { font-size: 14px; color: var(--text-light); }
+    .fc-front .fc-type-label { font-size: 12px; color: var(--text-light); margin-bottom: 12px; }
     .fc-back .answer-word { font-size: 36px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
     .fc-back .answer-romaji { font-size: 16px; color: var(--text-light); margin-bottom: 4px; }
     .fc-back .answer-meaning { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
@@ -177,12 +189,6 @@
     .quiz-score { margin-top: 32px; }
     .quiz-score .big { font-size: 64px; font-weight: 800; color: var(--primary); }
     .quiz-score p { font-size: 16px; color: var(--text-light); margin-top: 8px; }
-    .quiz-next-btn {
-      margin-top: 20px; padding: 12px 32px; background: var(--primary); color: #fff;
-      border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;
-      transition: background .2s;
-    }
-    .quiz-next-btn:hover { background: var(--primary-dark); }
 
     /* ===== RESULT / COMPLETE ===== */
     .complete-card { text-align: center; padding: 48px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); max-width: 500px; margin: 40px auto; }
@@ -194,10 +200,6 @@
     .hidden { display: none !important; }
     .mt-16 { margin-top: 16px; }
     .mt-24 { margin-top: 24px; }
-    .text-center { text-align: center; }
-    .flex-center { display: flex; align-items: center; justify-content: center; }
-    .gap-8 { gap: 8px; }
-    .inline-flex { display: inline-flex; align-items: center; }
 
     /* ===== RESPONSIVE ===== */
     @media (max-width: 640px) {
@@ -218,7 +220,7 @@
 <!-- NAV -->
 <nav>
   <div class="nav-inner">
-    <a class="logo" href="#" onclick="showPage('home')">RUNKU</a>
+    <span class="logo" onclick="showPage('home')">RUNKU</span>
     <div class="nav-links">
       <button class="nav-btn active" data-page="home" onclick="showPage('home')">Home</button>
       <button class="nav-btn" data-page="list" onclick="showPage('list')">Word List</button>
@@ -235,9 +237,9 @@
   <div id="page-home">
     <div class="hero">
       <h1>Welcome to <span>RUNKU</span></h1>
-      <p>Japanese Vocabulary Practice - Shopping & Greetings</p>
+      <p id="home-subtitle">Vocabulary Practice</p>
       <div class="stats-row">
-        <div class="stat-card"><div class="num" id="s-total">20</div><div class="label">Total Words</div></div>
+        <div class="stat-card"><div class="num" id="s-total">0</div><div class="label">Total Words</div></div>
         <div class="stat-card"><div class="num" id="s-learning">0</div><div class="label">Learning</div></div>
         <div class="stat-card"><div class="num" id="s-review">0</div><div class="label">Reviewing</div></div>
         <div class="stat-card"><div class="num" id="s-mastered">0</div><div class="label">Mastered</div></div>
@@ -263,15 +265,11 @@
   <!-- ========== WORD LIST ========== -->
   <div id="page-list" class="hidden">
     <h1 class="page-title">Word List</h1>
-    <p class="page-sub">Browse all 20 Japanese vocabulary words</p>
-    <div class="cat-tabs">
-      <button class="cat-tab active" onclick="filterCategory('all', this)">All (20)</button>
-      <button class="cat-tab" onclick="filterCategory('shopping', this)">Shopping (10)</button>
-      <button class="cat-tab" onclick="filterCategory('greetings', this)">Greetings (10)</button>
-    </div>
+    <p class="page-sub" id="list-sub">Browse all vocabulary words</p>
+    <div class="cat-tabs" id="list-tabs"></div>
     <table class="word-table">
       <thead>
-        <tr><th>#</th><th>Japanese</th><th>Chinese</th><th>Example</th><th></th></tr>
+        <tr><th>#</th><th>Word</th><th>Meaning</th><th>Example</th><th></th></tr>
       </thead>
       <tbody id="word-tbody"></tbody>
     </table>
@@ -280,11 +278,7 @@
   <!-- ========== FLASHCARD ========== -->
   <div id="page-flashcard" class="hidden">
     <h1 class="page-title">Flashcard Practice</h1>
-    <div class="cat-tabs mt-16">
-      <button class="cat-tab active" id="fc-cat-all" onclick="startFlashcards('all')">All</button>
-      <button class="cat-tab" id="fc-cat-shopping" onclick="startFlashcards('shopping')">Shopping</button>
-      <button class="cat-tab" id="fc-cat-greetings" onclick="startFlashcards('greetings')">Greetings</button>
-    </div>
+    <div class="cat-tabs mt-16" id="fc-tabs"></div>
     <div class="fc-progress mt-16" id="fc-progress">1 / 20</div>
     <div class="progress-bar"><div class="progress-fill" id="fc-bar" style="width:5%"></div></div>
 
@@ -292,20 +286,21 @@
       <div class="flashcard-wrap">
         <div class="flashcard" id="flashcard" onclick="flipCard()">
           <div class="fc-face fc-front">
+            <div class="fc-type-label" id="fc-type-label"></div>
             <div class="jp" id="fc-jp"></div>
             <div class="hint">Click to reveal answer</div>
           </div>
           <div class="fc-face fc-back">
             <div style="display:flex;align-items:center;margin-bottom:4px;">
               <span class="answer-word" id="fc-answer-word"></span>
-              <button class="speak-btn" onclick="event.stopPropagation();speakJP(currentFCWord().word)">🔊</button>
+              <button class="speak-btn" id="fc-speak-btn" onclick="event.stopPropagation();">🔊</button>
             </div>
             <div class="answer-romaji" id="fc-romaji"></div>
             <div class="answer-meaning" id="fc-meaning"></div>
-            <div class="answer-example">
+            <div class="answer-example" id="fc-example-area">
               <div class="ex-jp" id="fc-ex-jp"></div>
               <div class="ex-zh" id="fc-ex-zh"></div>
-              <button class="speak-btn-sm" onclick="event.stopPropagation();speakJP(currentFCWord().example_jp)" style="margin-top:6px;">🔊 Listen</button>
+              <button class="speak-btn-sm" id="fc-speak-example" onclick="event.stopPropagation();" style="margin-top:6px;">🔊 Listen</button>
             </div>
           </div>
         </div>
@@ -332,12 +327,8 @@
   <!-- ========== QUIZ ========== -->
   <div id="page-quiz" class="hidden">
     <h1 class="page-title">Quiz Mode</h1>
-    <p class="page-sub">Choose the correct Chinese meaning</p>
-    <div class="cat-tabs mt-16">
-      <button class="cat-tab active" id="qz-cat-all" onclick="startQuiz('all')">All</button>
-      <button class="cat-tab" id="qz-cat-shopping" onclick="startQuiz('shopping')">Shopping</button>
-      <button class="cat-tab" id="qz-cat-greetings" onclick="startQuiz('greetings')">Greetings</button>
-    </div>
+    <p class="page-sub">Choose the correct meaning</p>
+    <div class="cat-tabs mt-16" id="qz-tabs"></div>
 
     <div id="quiz-area" class="mt-24">
       <div class="fc-progress" id="qz-progress">1 / 10</div>
@@ -345,7 +336,7 @@
       <div class="quiz-card mt-24">
         <div class="quiz-question" id="qz-question"></div>
         <div class="quiz-sub" id="qz-romaji"></div>
-        <button class="speak-btn-sm" onclick="speakJP(quizWords[qzIdx].word)" style="margin-bottom:20px;font-size:24px;">🔊</button>
+        <button class="speak-btn-sm" id="qz-speak" style="margin-bottom:20px;font-size:24px;">🔊</button>
         <div class="quiz-options" id="qz-options"></div>
       </div>
     </div>
@@ -363,34 +354,169 @@
     </div>
   </div>
 
+  <!-- ========== LOADING ========== -->
+  <div id="page-loading" class="hidden">
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading vocabulary...</p>
+    </div>
+  </div>
+
 </div>
 
 <script>
-// ===== VOCABULARY DATA =====
-const WORDS = [
-  // Shopping
-  { id:1,  word:"いくら",     romaji:"Ikura",       meaning:"多少錢",       category:"shopping", example_jp:"これはいくらですか？",                     example_zh:"這多少錢？" },
-  { id:2,  word:"免税",       romaji:"Menzei",      meaning:"免稅",         category:"shopping", example_jp:"免税はできますか？",                       example_zh:"可以免稅嗎？" },
-  { id:3,  word:"試着",       romaji:"Shichaku",    meaning:"試穿",         category:"shopping", example_jp:"これを試着してもいいですか？",             example_zh:"這可以試穿嗎？" },
-  { id:4,  word:"在庫",       romaji:"Zaiko",       meaning:"庫存",         category:"shopping", example_jp:"これの在庫はありますか？",                 example_zh:"這還有存貨嗎？" },
-  { id:5,  word:"袋",         romaji:"Fukuro",      meaning:"袋子",         category:"shopping", example_jp:"袋をいただけますか？",                     example_zh:"可以給我一個袋子嗎？" },
-  { id:6,  word:"お会計",     romaji:"Okaikei",     meaning:"結帳",         category:"shopping", example_jp:"お会計をお願いします。",                   example_zh:"麻煩結帳。" },
-  { id:7,  word:"割引",       romaji:"Waribiki",    meaning:"折扣",         category:"shopping", example_jp:"割引はありますか？",                       example_zh:"有折扣嗎？" },
-  { id:8,  word:"現金",       romaji:"Genkin",      meaning:"現金",         category:"shopping", example_jp:"現金で払います。",                         example_zh:"用現金支付。" },
-  { id:9,  word:"カード",     romaji:"Kādo",        meaning:"信用卡",       category:"shopping", example_jp:"クレジットカードは使えますか？",           example_zh:"可以使用信用卡嗎？" },
-  { id:10, word:"返品",       romaji:"Henpin",      meaning:"退貨",         category:"shopping", example_jp:"返品は可能ですか？",                       example_zh:"可以退貨嗎？" },
-  // Greetings
-  { id:11, word:"おはよう",       romaji:"Ohayō",         meaning:"早安",                 category:"greetings", example_jp:"おはようございます。",                           example_zh:"早安。（正式說法）" },
-  { id:12, word:"こんにちは",     romaji:"Konnichiwa",    meaning:"午安",                 category:"greetings", example_jp:"こんにちは、お元気ですか？",                     example_zh:"你好，你好嗎？" },
-  { id:13, word:"こんばんは",     romaji:"Konbanwa",      meaning:"晚安（見面用）",       category:"greetings", example_jp:"皆さん、こんばんは。",                           example_zh:"各位，晚上好。" },
-  { id:14, word:"おやすみ",       romaji:"Oyasumi",       meaning:"晚安（睡前用）",       category:"greetings", example_jp:"疲れたので、もうおやすみなさい。",               example_zh:"累了，先去睡了，晚安。" },
-  { id:15, word:"ありがとう",     romaji:"Arigatō",       meaning:"謝謝",                 category:"greetings", example_jp:"いつもありがとうございます。",                   example_zh:"一直以來都非常感謝。" },
-  { id:16, word:"すみません",     romaji:"Sumimasen",     meaning:"不好意思／對不起",     category:"greetings", example_jp:"すみません、ちょっといいですか？",               example_zh:"不好意思，可以打擾一下嗎？" },
-  { id:17, word:"さようなら",     romaji:"Sayōnara",      meaning:"再見",                 category:"greetings", example_jp:"では、さようなら。",                             example_zh:"那麼，再見了。" },
-  { id:18, word:"始めまして",     romaji:"Hajimemashite", meaning:"初次見面",             category:"greetings", example_jp:"始めまして、どうぞよろしく。",                   example_zh:"初次見面，請多指教。" },
-  { id:19, word:"お疲れ様",       romaji:"Otsukaresama",  meaning:"辛苦了",               category:"greetings", example_jp:"今日はお疲れ様でした。",                         example_zh:"今天辛苦了。" },
-  { id:20, word:"お願いします",   romaji:"Onegaishimasu", meaning:"拜託了／請",           category:"greetings", example_jp:"これをお願いします。",                           example_zh:"麻煩請給我這個 / 請幫我處理這個。" },
-];
+// ===== GLOBALS =====
+let WORDS = [];
+let CATEGORIES = []; // [{ key, name, type, count }]
+
+// ===== PARSE words FILE =====
+function parseWordsFile(text) {
+  const words = [];
+  const categories = [];
+  let currentCat = null;
+  let currentType = 'japanese';
+  let id = 0;
+
+  for (const raw of text.split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+
+    // Category header: [Name]
+    const catMatch = line.match(/^\[(.+)\]$/);
+    if (catMatch) {
+      currentCat = catMatch[1].trim();
+      const key = currentCat.toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff\u3040-\u309f\u30a0-\u30ff]+/g, '_');
+      categories.push({ key, name: currentCat, type: 'japanese', count: 0 });
+      continue;
+    }
+
+    // Type declaration
+    if (line.toLowerCase().startsWith('type:')) {
+      const t = line.split(':')[1].trim().toLowerCase();
+      if (categories.length > 0) categories[categories.length - 1].type = t;
+      currentType = t;
+      continue;
+    }
+
+    // Word line
+    if (!currentCat) continue;
+    const parts = line.split('|').map(s => s.trim());
+    const catInfo = categories[categories.length - 1];
+    id++;
+
+    if (currentType === 'japanese' && parts.length >= 3) {
+      words.push({
+        id,
+        word: parts[0],
+        romaji: parts[1] || '',
+        meaning: parts[2] || '',
+        category: catInfo.key,
+        categoryName: catInfo.name,
+        type: 'japanese',
+        example_jp: parts[3] || '',
+        example_zh: parts[4] || '',
+      });
+      catInfo.count++;
+    } else if (currentType === 'english' && parts.length >= 2) {
+      words.push({
+        id,
+        word: parts[0],
+        romaji: '',
+        meaning: parts[1],
+        category: catInfo.key,
+        categoryName: catInfo.name,
+        type: 'english',
+        example_jp: '',
+        example_zh: '',
+      });
+      catInfo.count++;
+    }
+  }
+
+  return { words, categories };
+}
+
+// ===== LOAD WORDS =====
+async function loadWords() {
+  try {
+    const res = await fetch('words');
+    if (!res.ok) throw new Error('fetch failed');
+    const text = await res.text();
+    const parsed = parseWordsFile(text);
+    if (parsed.words.length > 0) {
+      WORDS = parsed.words;
+      CATEGORIES = parsed.categories;
+    }
+  } catch (e) {
+    console.warn('Could not fetch words file, using fallback data.', e);
+    useFallback();
+  }
+  initApp();
+}
+
+function useFallback() {
+  WORDS = [
+    { id:1,  word:"いくら",     romaji:"Ikura",       meaning:"多少錢",       category:"shopping", categoryName:"Shopping", type:"japanese", example_jp:"これはいくらですか？", example_zh:"這多少錢？" },
+    { id:2,  word:"免税",       romaji:"Menzei",      meaning:"免稅",         category:"shopping", categoryName:"Shopping", type:"japanese", example_jp:"免税はできますか？", example_zh:"可以免稅嗎？" },
+    { id:3,  word:"おはよう",   romaji:"Ohayō",       meaning:"早安",         category:"greetings", categoryName:"Greetings", type:"japanese", example_jp:"おはようございます。", example_zh:"早安。（正式說法）" },
+    { id:4,  word:"ありがとう", romaji:"Arigatō",     meaning:"謝謝",         category:"greetings", categoryName:"Greetings", type:"japanese", example_jp:"いつもありがとうございます。", example_zh:"一直以來都非常感謝。" },
+    { id:5,  word:"open",       romaji:"",            meaning:"開放",         category:"english", categoryName:"English", type:"english", example_jp:"", example_zh:"" },
+    { id:6,  word:"learn",      romaji:"",            meaning:"學習",         category:"english", categoryName:"English", type:"english", example_jp:"", example_zh:"" },
+  ];
+  CATEGORIES = [
+    { key:"shopping", name:"Shopping", type:"japanese", count:2 },
+    { key:"greetings", name:"Greetings", type:"japanese", count:2 },
+    { key:"english", name:"English", type:"english", count:2 },
+  ];
+}
+
+// ===== INIT =====
+function initApp() {
+  buildCategoryTabs();
+  updateHomeStats();
+  const catNames = CATEGORIES.map(c => c.name.split('/')[0].trim());
+  document.getElementById('home-subtitle').textContent = catNames.join(' / ') + ' Vocabulary Practice';
+}
+
+// ===== BUILD CATEGORY TABS (dynamic) =====
+function buildCategoryTabs() {
+  const containers = [
+    { el: document.getElementById('list-tabs'), prefix: 'list' },
+    { el: document.getElementById('fc-tabs'),   prefix: 'fc' },
+    { el: document.getElementById('qz-tabs'),   prefix: 'qz' },
+  ];
+
+  for (const { el, prefix } of containers) {
+    el.innerHTML = '';
+    // "All" tab
+    const allBtn = document.createElement('button');
+    allBtn.className = 'cat-tab active';
+    allBtn.dataset.cat = 'all';
+    allBtn.textContent = `All (${WORDS.length})`;
+    if (prefix === 'list') allBtn.onclick = () => filterCategory('all', allBtn);
+    else if (prefix === 'fc') allBtn.onclick = () => startFlashcards('all');
+    else allBtn.onclick = () => startQuiz('all');
+    el.appendChild(allBtn);
+
+    // Per-category tabs
+    for (const cat of CATEGORIES) {
+      const btn = document.createElement('button');
+      btn.className = 'cat-tab';
+      btn.dataset.cat = cat.key;
+      btn.textContent = `${cat.name} (${cat.count})`;
+      if (prefix === 'list') btn.onclick = () => filterCategory(cat.key, btn);
+      else if (prefix === 'fc') btn.onclick = () => startFlashcards(cat.key);
+      else btn.onclick = () => startQuiz(cat.key);
+      el.appendChild(btn);
+    }
+  }
+}
+
+function setActiveTab(containerId, catKey) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.querySelectorAll('.cat-tab').forEach(b => b.classList.toggle('active', b.dataset.cat === catKey));
+}
 
 // ===== LOCAL STORAGE =====
 function loadRecords() {
@@ -416,25 +542,27 @@ function resetProgress() {
 }
 
 // ===== SPEECH =====
-function speakJP(text) {
+function speakWord(text, type) {
   if (!window.speechSynthesis) return;
   const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'ja-JP';
+  u.lang = type === 'english' ? 'en-US' : 'ja-JP';
   u.rate = 0.85;
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }
 
 // ===== PAGE NAVIGATION =====
+let currentPage = 'home';
 function showPage(name) {
-  ['home','list','flashcard','quiz'].forEach(p => {
+  currentPage = name;
+  ['home','list','flashcard','quiz','loading'].forEach(p => {
     document.getElementById('page-' + p).classList.toggle('hidden', p !== name);
   });
   document.querySelectorAll('.nav-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.page === name);
   });
   if (name === 'home') updateHomeStats();
-  if (name === 'list') renderWordList('all');
+  if (name === 'list') { setActiveTab('list-tabs', 'all'); renderWordList('all'); }
   if (name === 'flashcard') startFlashcards('all');
   if (name === 'quiz') startQuiz('all');
   window.scrollTo(0, 0);
@@ -442,31 +570,34 @@ function showPage(name) {
 
 // ===== WORD LIST =====
 function filterCategory(cat, btn) {
-  if (btn) {
-    btn.parentElement.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-  }
+  setActiveTab('list-tabs', cat);
   renderWordList(cat);
 }
 
 function renderWordList(cat) {
-  const tbody = document.getElementById('word-tbody');
   const filtered = cat === 'all' ? WORDS : WORDS.filter(w => w.category === cat);
-  tbody.innerHTML = filtered.map((w, i) => `
-    <tr>
+  document.getElementById('list-sub').textContent = `Browse all ${filtered.length} vocabulary words`;
+
+  const tbody = document.getElementById('word-tbody');
+  tbody.innerHTML = filtered.map((w, i) => {
+    const badge = w.type === 'english'
+      ? '<span class="type-badge en">EN</span>'
+      : '<span class="type-badge jp">JP</span>';
+    const romaji = w.romaji ? `<div class="romaji">${esc(w.romaji)}</div>` : '';
+    const example = w.example_jp
+      ? `<div style="font-size:14px;">${esc(w.example_jp)}</div><div class="example-text">${esc(w.example_zh)}</div>`
+      : '<span style="color:#ccc;">-</span>';
+    return `<tr>
       <td>${i + 1}</td>
       <td>
-        <div class="jp-word">${w.word}</div>
-        <div class="romaji">${w.romaji}</div>
+        <div class="jp-word">${esc(w.word)} ${badge}</div>
+        ${romaji}
       </td>
-      <td>${w.meaning}</td>
-      <td>
-        <div style="font-size:14px;">${w.example_jp}</div>
-        <div class="example-text">${w.example_zh}</div>
-      </td>
-      <td><button class="speak-btn-sm" onclick="speakJP('${w.word}')">🔊</button></td>
-    </tr>
-  `).join('');
+      <td>${esc(w.meaning)}</td>
+      <td>${example}</td>
+      <td><button class="speak-btn-sm" onclick="speakWord('${escAttr(w.word)}','${w.type}')">🔊</button></td>
+    </tr>`;
+  }).join('');
 }
 
 // ===== FLASHCARD =====
@@ -476,10 +607,7 @@ function currentFCWord() { return fcWords[fcIdx] || WORDS[0]; }
 
 function startFlashcards(cat) {
   fcCategory = cat;
-  // Update category tabs
-  document.querySelectorAll('#page-flashcard .cat-tab').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('fc-cat-' + cat);
-  if (btn) btn.classList.add('active');
+  setActiveTab('fc-tabs', cat);
 
   fcWords = shuffle(cat === 'all' ? [...WORDS] : WORDS.filter(w => w.category === cat));
   fcIdx = 0;
@@ -497,12 +625,28 @@ function renderFC() {
     return;
   }
   const w = fcWords[fcIdx];
+  const isJP = w.type === 'japanese';
+
   document.getElementById('fc-jp').textContent = w.word;
+  document.getElementById('fc-type-label').textContent = isJP ? '🇯🇵 Japanese' : '🇬🇧 English';
   document.getElementById('fc-answer-word').textContent = w.word;
-  document.getElementById('fc-romaji').textContent = w.romaji;
+  document.getElementById('fc-romaji').textContent = w.romaji || '';
+  document.getElementById('fc-romaji').style.display = w.romaji ? '' : 'none';
   document.getElementById('fc-meaning').textContent = w.meaning;
-  document.getElementById('fc-ex-jp').textContent = w.example_jp;
-  document.getElementById('fc-ex-zh').textContent = w.example_zh;
+
+  const exArea = document.getElementById('fc-example-area');
+  if (w.example_jp) {
+    exArea.style.display = '';
+    document.getElementById('fc-ex-jp').textContent = w.example_jp;
+    document.getElementById('fc-ex-zh').textContent = w.example_zh;
+  } else {
+    exArea.style.display = 'none';
+  }
+
+  // Rebind speak buttons
+  document.getElementById('fc-speak-btn').onclick = (e) => { e.stopPropagation(); speakWord(w.word, w.type); };
+  document.getElementById('fc-speak-example').onclick = (e) => { e.stopPropagation(); speakWord(w.example_jp, 'japanese'); };
+
   document.getElementById('fc-progress').textContent = `${fcIdx + 1} / ${fcWords.length}`;
   document.getElementById('fc-bar').style.width = ((fcIdx + 1) / fcWords.length * 100) + '%';
   document.getElementById('flashcard').classList.remove('flipped');
@@ -545,9 +689,7 @@ let quizWords = [], qzIdx = 0, qzCorrect = 0, qzAnswered = false, qzCategory = '
 
 function startQuiz(cat) {
   qzCategory = cat;
-  document.querySelectorAll('#page-quiz .cat-tab').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('qz-cat-' + cat);
-  if (btn) btn.classList.add('active');
+  setActiveTab('qz-tabs', cat);
 
   quizWords = shuffle(cat === 'all' ? [...WORDS] : WORDS.filter(w => w.category === cat));
   qzIdx = 0; qzCorrect = 0; qzAnswered = false;
@@ -568,22 +710,23 @@ function renderQuiz() {
   qzAnswered = false;
   const w = quizWords[qzIdx];
   document.getElementById('qz-question').textContent = w.word;
-  document.getElementById('qz-romaji').textContent = w.romaji;
+  document.getElementById('qz-romaji').textContent = w.romaji || (w.type === 'english' ? 'English' : '');
   document.getElementById('qz-progress').textContent = `${qzIdx + 1} / ${quizWords.length}`;
   document.getElementById('qz-bar').style.width = ((qzIdx + 1) / quizWords.length * 100) + '%';
+  document.getElementById('qz-speak').onclick = () => speakWord(w.word, w.type);
 
-  // Generate 4 options (1 correct + 3 wrong)
+  // Build 4 options (1 correct + 3 wrong from same pool)
   const wrongPool = WORDS.filter(x => x.id !== w.id);
   const wrongs = shuffle(wrongPool).slice(0, 3);
   const options = shuffle([w, ...wrongs]);
 
   const container = document.getElementById('qz-options');
   container.innerHTML = options.map(o =>
-    `<button class="quiz-opt" data-correct="${o.id === w.id}" data-id="${o.id}" onclick="answerQuiz(this, ${o.id === w.id}, ${w.id})">${o.meaning}</button>`
+    `<button class="quiz-opt" data-correct="${o.id === w.id}" onclick="answerQuiz(this, ${o.id === w.id})">${esc(o.meaning)}</button>`
   ).join('');
 }
 
-function answerQuiz(btn, isCorrect, correctId) {
+function answerQuiz(btn, isCorrect) {
   if (qzAnswered) return;
   qzAnswered = true;
   if (isCorrect) {
@@ -591,7 +734,6 @@ function answerQuiz(btn, isCorrect, correctId) {
     qzCorrect++;
   } else {
     btn.classList.add('wrong');
-    // Reveal correct answer
     document.querySelectorAll('.quiz-opt').forEach(b => {
       if (b.dataset.correct === 'true') b.classList.add('reveal');
     });
@@ -601,23 +743,33 @@ function answerQuiz(btn, isCorrect, correctId) {
 
 // ===== KEYBOARD =====
 document.addEventListener('keydown', e => {
-  const fcPage = !document.getElementById('page-flashcard').classList.contains('hidden');
-  if (!fcPage) return;
+  if (currentPage !== 'flashcard') return;
   if (e.code === 'Space') { e.preventDefault(); flipCard(); }
   if (fcFlipped && e.key >= '1' && e.key <= '4') rateCard(parseInt(e.key) - 1);
 });
 
 // ===== UTILS =====
 function shuffle(arr) {
-  for (let i = arr.length - 1; i > 0; i--) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
+    [a[i], a[j]] = [a[j], a[i]];
   }
-  return arr;
+  return a;
 }
 
-// ===== INIT =====
-updateHomeStats();
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function escAttr(s) {
+  return s.replace(/'/g, "\\'").replace(/\\/g, '\\\\');
+}
+
+// ===== BOOT =====
+loadWords();
 </script>
 
 </body>
