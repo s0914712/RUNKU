@@ -87,7 +87,7 @@ function MobileNavLink({ to, children, onClick }) {
 
 function App() {
   return (
-    <Router basename="/RUNKU">
+    <Router>
       <div className="min-h-screen bg-gray-50">
         <Navigation />
         <main className="max-w-7xl mx-auto px-4 py-8">
