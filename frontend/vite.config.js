@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/RUNKU/',  // 修改為你的 GitHub repo 名稱
+  base: './',  // 使用相對路徑，適用於 GitHub Pages
   build: {
     outDir: 'dist',
   },
