@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RUNKU - Japanese Vocabulary Practice</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary: #3B82F6;
+      --primary-dark: #2563EB;
+      --green: #10B981;
+      --green-dark: #059669;
+      --orange: #F59E0B;
+      --red: #EF4444;
+      --purple: #8B5CF6;
+      --bg: #F3F4F6;
+      --card: #FFFFFF;
+      --text: #1F2937;
+      --text-light: #6B7280;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+      --radius: 16px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', 'Noto Sans JP', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ===== NAV ===== */
+    nav {
+      background: var(--card);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .nav-inner {
+      max-width: 960px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; height: 60px;
+    }
+    .logo { font-size: 22px; font-weight: 800; color: var(--primary); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .nav-links { display: flex; gap: 6px; }
+    .nav-btn {
+      background: none; border: none; cursor: pointer;
+      padding: 8px 16px; border-radius: 8px; font-size: 14px; font-weight: 600;
+      color: var(--text-light); transition: all .2s;
+    }
+    .nav-btn:hover { background: #F3F4F6; color: var(--text); }
+    .nav-btn.active { background: var(--primary); color: #fff; }
+
+    /* ===== MAIN ===== */
+    .container { max-width: 960px; margin: 0 auto; padding: 24px 20px 60px; }
+
+    /* ===== HOME PAGE ===== */
+    .hero { text-align: center; padding: 48px 0 32px; }
+    .hero h1 { font-size: 42px; font-weight: 800; margin-bottom: 8px; }
+    .hero h1 span { color: var(--primary); }
+    .hero p { font-size: 18px; color: var(--text-light); margin-bottom: 32px; }
+    .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; max-width: 600px; margin: 0 auto 32px; }
+    .stat-card { background: var(--card); border-radius: 12px; padding: 16px; box-shadow: var(--shadow); }
+    .stat-card .num { font-size: 28px; font-weight: 800; color: var(--primary); }
+    .stat-card .label { font-size: 13px; color: var(--text-light); margin-top: 4px; }
+    .start-btn {
+      display: inline-block; padding: 16px 40px; background: var(--primary); color: #fff;
+      border: none; border-radius: 12px; font-size: 18px; font-weight: 700; cursor: pointer;
+      transition: background .2s, transform .1s; box-shadow: 0 4px 16px rgba(59,130,246,0.3);
+    }
+    .start-btn:hover { background: var(--primary-dark); transform: translateY(-1px); }
+
+    .features { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 40px; }
+    .feature-card {
+      border-radius: var(--radius); padding: 32px; color: #fff; cursor: pointer;
+      transition: transform .2s, box-shadow .2s; text-decoration: none;
+    }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: 0 12px 32px rgba(0,0,0,0.15); }
+    .feature-card .icon { font-size: 48px; margin-bottom: 12px; }
+    .feature-card h3 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .feature-card p { font-size: 14px; opacity: 0.9; }
+    .bg-blue { background: linear-gradient(135deg, #60A5FA, #3B82F6); }
+    .bg-green { background: linear-gradient(135deg, #34D399, #10B981); }
+    .bg-purple { background: linear-gradient(135deg, #A78BFA, #8B5CF6); }
+    .bg-orange { background: linear-gradient(135deg, #FBBF24, #F59E0B); }
+
+    /* ===== WORD LIST PAGE ===== */
+    .page-title { font-size: 32px; font-weight: 800; text-align: center; margin-bottom: 8px; }
+    .page-sub { text-align: center; color: var(--text-light); margin-bottom: 24px; font-size: 15px; }
+    .cat-tabs { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; }
+    .cat-tab {
+      padding: 8px 20px; border-radius: 20px; border: 2px solid #E5E7EB;
+      background: var(--card); cursor: pointer; font-size: 14px; font-weight: 600;
+      transition: all .2s; color: var(--text);
+    }
+    .cat-tab:hover { border-color: var(--primary); color: var(--primary); }
+    .cat-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .word-table { width: 100%; background: var(--card); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+    .word-table th, .word-table td { padding: 14px 16px; text-align: left; border-bottom: 1px solid #F3F4F6; }
+    .word-table th { background: #F9FAFB; font-size: 13px; color: var(--text-light); font-weight: 600; }
+    .word-table td { font-size: 15px; }
+    .word-table tr:last-child td { border-bottom: none; }
+    .word-table tr:hover td { background: #F9FAFB; }
+    .jp-word { font-size: 18px; font-weight: 700; color: var(--text); }
+    .romaji { font-size: 13px; color: var(--primary); margin-top: 2px; }
+    .speak-btn-sm {
+      background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px;
+      border-radius: 50%; transition: background .2s; vertical-align: middle;
+    }
+    .speak-btn-sm:hover { background: #EFF6FF; }
+    .example-text { font-size: 13px; color: var(--text-light); margin-top: 4px; line-height: 1.5; }
+
+    /* ===== FLASHCARD PAGE ===== */
+    .fc-progress { text-align: center; color: var(--text-light); margin-bottom: 8px; font-size: 14px; }
+    .progress-bar { width: 100%; max-width: 600px; margin: 0 auto 32px; height: 6px; background: #E5E7EB; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width .3s; }
+
+    .flashcard-wrap { perspective: 1000px; max-width: 600px; margin: 0 auto; }
+    .flashcard {
+      position: relative; width: 100%; min-height: 360px;
+      cursor: pointer; transform-style: preserve-3d; transition: transform .5s;
+      border-radius: var(--radius);
+    }
+    .flashcard.flipped { transform: rotateY(180deg); }
+    .fc-face {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      backface-visibility: hidden; border-radius: var(--radius); box-shadow: var(--shadow);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 32px; background: var(--card);
+    }
+    .fc-back { transform: rotateY(180deg); justify-content: flex-start; align-items: stretch; }
+    .fc-front .jp { font-size: 56px; font-weight: 800; margin-bottom: 12px; }
+    .fc-front .hint { font-size: 14px; color: var(--text-light); }
+    .fc-back .answer-word { font-size: 36px; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+    .fc-back .answer-romaji { font-size: 16px; color: var(--text-light); margin-bottom: 4px; }
+    .fc-back .answer-meaning { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+    .fc-back .answer-example { background: #EFF6FF; padding: 16px; border-radius: 12px; font-size: 15px; line-height: 1.6; margin-bottom: 8px; width: 100%; }
+    .fc-back .answer-example .ex-jp { font-weight: 600; margin-bottom: 4px; }
+    .fc-back .answer-example .ex-zh { color: var(--text-light); font-size: 13px; }
+    .speak-btn {
+      background: var(--primary); color: #fff; border: none; border-radius: 50%;
+      width: 44px; height: 44px; font-size: 20px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s; margin-left: 12px; flex-shrink: 0;
+    }
+    .speak-btn:hover { background: var(--primary-dark); }
+
+    .rate-buttons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 24px; max-width: 600px; margin-left: auto; margin-right: auto; }
+    .rate-btn {
+      padding: 14px 8px; border: none; border-radius: 12px; cursor: pointer;
+      font-size: 14px; font-weight: 600; transition: all .2s;
+    }
+    .rate-btn:hover { transform: translateY(-2px); }
+    .rate-0 { background: #FEE2E2; color: #DC2626; }
+    .rate-0:hover { background: #FECACA; }
+    .rate-1 { background: #FFEDD5; color: #EA580C; }
+    .rate-1:hover { background: #FED7AA; }
+    .rate-2 { background: #FEF9C3; color: #CA8A04; }
+    .rate-2:hover { background: #FEF08A; }
+    .rate-3 { background: #DCFCE7; color: #16A34A; }
+    .rate-3:hover { background: #BBF7D0; }
+    .fc-hint-bottom { text-align: center; color: var(--text-light); font-size: 13px; margin-top: 16px; }
+
+    /* ===== QUIZ PAGE ===== */
+    .quiz-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 40px; max-width: 600px; margin: 0 auto; text-align: center; }
+    .quiz-question { font-size: 48px; font-weight: 800; margin-bottom: 8px; }
+    .quiz-sub { font-size: 14px; color: var(--text-light); margin-bottom: 28px; }
+    .quiz-options { display: grid; gap: 12px; }
+    .quiz-opt {
+      padding: 16px; border: 2px solid #E5E7EB; border-radius: 12px; background: var(--card);
+      cursor: pointer; font-size: 16px; font-weight: 600; transition: all .2s; text-align: left;
+    }
+    .quiz-opt:hover { border-color: var(--primary); background: #EFF6FF; }
+    .quiz-opt.correct { border-color: var(--green); background: #DCFCE7; }
+    .quiz-opt.wrong { border-color: var(--red); background: #FEE2E2; }
+    .quiz-opt.reveal { border-color: var(--green); background: #DCFCE7; }
+    .quiz-score { margin-top: 32px; }
+    .quiz-score .big { font-size: 64px; font-weight: 800; color: var(--primary); }
+    .quiz-score p { font-size: 16px; color: var(--text-light); margin-top: 8px; }
+    .quiz-next-btn {
+      margin-top: 20px; padding: 12px 32px; background: var(--primary); color: #fff;
+      border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer;
+      transition: background .2s;
+    }
+    .quiz-next-btn:hover { background: var(--primary-dark); }
+
+    /* ===== RESULT / COMPLETE ===== */
+    .complete-card { text-align: center; padding: 48px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); max-width: 500px; margin: 40px auto; }
+    .complete-card .big-icon { font-size: 72px; margin-bottom: 16px; }
+    .complete-card h2 { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+    .complete-card p { color: var(--text-light); margin-bottom: 24px; }
+
+    /* ===== UTILITIES ===== */
+    .hidden { display: none !important; }
+    .mt-16 { margin-top: 16px; }
+    .mt-24 { margin-top: 24px; }
+    .text-center { text-align: center; }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+    .gap-8 { gap: 8px; }
+    .inline-flex { display: inline-flex; align-items: center; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 28px; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .features { grid-template-columns: 1fr; }
+      .nav-links { gap: 2px; }
+      .nav-btn { padding: 6px 10px; font-size: 13px; }
+      .fc-front .jp { font-size: 40px; }
+      .rate-buttons { grid-template-columns: repeat(2, 1fr); }
+      .word-table th:nth-child(4), .word-table td:nth-child(4) { display: none; }
+      .quiz-question { font-size: 36px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="#" onclick="showPage('home')">RUNKU</a>
+    <div class="nav-links">
+      <button class="nav-btn active" data-page="home" onclick="showPage('home')">Home</button>
+      <button class="nav-btn" data-page="list" onclick="showPage('list')">Word List</button>
+      <button class="nav-btn" data-page="flashcard" onclick="showPage('flashcard')">Flashcard</button>
+      <button class="nav-btn" data-page="quiz" onclick="showPage('quiz')">Quiz</button>
+    </div>
+  </div>
+</nav>
+
+<!-- PAGES -->
+<div class="container">
+
+  <!-- ========== HOME ========== -->
+  <div id="page-home">
+    <div class="hero">
+      <h1>Welcome to <span>RUNKU</span></h1>
+      <p>Japanese Vocabulary Practice - Shopping & Greetings</p>
+      <div class="stats-row">
+        <div class="stat-card"><div class="num" id="s-total">20</div><div class="label">Total Words</div></div>
+        <div class="stat-card"><div class="num" id="s-learning">0</div><div class="label">Learning</div></div>
+        <div class="stat-card"><div class="num" id="s-review">0</div><div class="label">Reviewing</div></div>
+        <div class="stat-card"><div class="num" id="s-mastered">0</div><div class="label">Mastered</div></div>
+      </div>
+      <button class="start-btn" onclick="showPage('flashcard')">Start Learning &rarr;</button>
+    </div>
+    <div class="features">
+      <div class="feature-card bg-blue" onclick="showPage('list')">
+        <div class="icon">📖</div><h3>Word List</h3><p>Browse all vocabulary with examples</p>
+      </div>
+      <div class="feature-card bg-green" onclick="showPage('flashcard')">
+        <div class="icon">📝</div><h3>Flashcards</h3><p>Spaced repetition study</p>
+      </div>
+      <div class="feature-card bg-purple" onclick="showPage('quiz')">
+        <div class="icon">🎯</div><h3>Quiz</h3><p>Test your knowledge</p>
+      </div>
+      <div class="feature-card bg-orange" onclick="resetProgress()">
+        <div class="icon">🔄</div><h3>Reset</h3><p>Clear progress & start fresh</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== WORD LIST ========== -->
+  <div id="page-list" class="hidden">
+    <h1 class="page-title">Word List</h1>
+    <p class="page-sub">Browse all 20 Japanese vocabulary words</p>
+    <div class="cat-tabs">
+      <button class="cat-tab active" onclick="filterCategory('all', this)">All (20)</button>
+      <button class="cat-tab" onclick="filterCategory('shopping', this)">Shopping (10)</button>
+      <button class="cat-tab" onclick="filterCategory('greetings', this)">Greetings (10)</button>
+    </div>
+    <table class="word-table">
+      <thead>
+        <tr><th>#</th><th>Japanese</th><th>Chinese</th><th>Example</th><th></th></tr>
+      </thead>
+      <tbody id="word-tbody"></tbody>
+    </table>
+  </div>
+
+  <!-- ========== FLASHCARD ========== -->
+  <div id="page-flashcard" class="hidden">
+    <h1 class="page-title">Flashcard Practice</h1>
+    <div class="cat-tabs mt-16">
+      <button class="cat-tab active" id="fc-cat-all" onclick="startFlashcards('all')">All</button>
+      <button class="cat-tab" id="fc-cat-shopping" onclick="startFlashcards('shopping')">Shopping</button>
+      <button class="cat-tab" id="fc-cat-greetings" onclick="startFlashcards('greetings')">Greetings</button>
+    </div>
+    <div class="fc-progress mt-16" id="fc-progress">1 / 20</div>
+    <div class="progress-bar"><div class="progress-fill" id="fc-bar" style="width:5%"></div></div>
+
+    <div id="fc-card-area">
+      <div class="flashcard-wrap">
+        <div class="flashcard" id="flashcard" onclick="flipCard()">
+          <div class="fc-face fc-front">
+            <div class="jp" id="fc-jp"></div>
+            <div class="hint">Click to reveal answer</div>
+          </div>
+          <div class="fc-face fc-back">
+            <div style="display:flex;align-items:center;margin-bottom:4px;">
+              <span class="answer-word" id="fc-answer-word"></span>
+              <button class="speak-btn" onclick="event.stopPropagation();speakJP(currentFCWord().word)">🔊</button>
+            </div>
+            <div class="answer-romaji" id="fc-romaji"></div>
+            <div class="answer-meaning" id="fc-meaning"></div>
+            <div class="answer-example">
+              <div class="ex-jp" id="fc-ex-jp"></div>
+              <div class="ex-zh" id="fc-ex-zh"></div>
+              <button class="speak-btn-sm" onclick="event.stopPropagation();speakJP(currentFCWord().example_jp)" style="margin-top:6px;">🔊 Listen</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="rate-buttons" id="fc-rate" style="visibility:hidden;">
+        <button class="rate-btn rate-0" onclick="rateCard(0)">😰 Unknown</button>
+        <button class="rate-btn rate-1" onclick="rateCard(1)">😕 Hard</button>
+        <button class="rate-btn rate-2" onclick="rateCard(2)">🙂 Okay</button>
+        <button class="rate-btn rate-3" onclick="rateCard(3)">😊 Easy</button>
+      </div>
+      <div class="fc-hint-bottom">Press Space to flip &middot; Keys 1-4 to rate</div>
+    </div>
+
+    <div id="fc-complete" class="hidden">
+      <div class="complete-card">
+        <div class="big-icon">🎉</div>
+        <h2>Session Complete!</h2>
+        <p id="fc-complete-msg">You reviewed all words.</p>
+        <button class="start-btn" onclick="startFlashcards(fcCategory)">Practice Again</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== QUIZ ========== -->
+  <div id="page-quiz" class="hidden">
+    <h1 class="page-title">Quiz Mode</h1>
+    <p class="page-sub">Choose the correct Chinese meaning</p>
+    <div class="cat-tabs mt-16">
+      <button class="cat-tab active" id="qz-cat-all" onclick="startQuiz('all')">All</button>
+      <button class="cat-tab" id="qz-cat-shopping" onclick="startQuiz('shopping')">Shopping</button>
+      <button class="cat-tab" id="qz-cat-greetings" onclick="startQuiz('greetings')">Greetings</button>
+    </div>
+
+    <div id="quiz-area" class="mt-24">
+      <div class="fc-progress" id="qz-progress">1 / 10</div>
+      <div class="progress-bar"><div class="progress-fill" id="qz-bar" style="width:10%"></div></div>
+      <div class="quiz-card mt-24">
+        <div class="quiz-question" id="qz-question"></div>
+        <div class="quiz-sub" id="qz-romaji"></div>
+        <button class="speak-btn-sm" onclick="speakJP(quizWords[qzIdx].word)" style="margin-bottom:20px;font-size:24px;">🔊</button>
+        <div class="quiz-options" id="qz-options"></div>
+      </div>
+    </div>
+
+    <div id="quiz-result" class="hidden">
+      <div class="complete-card">
+        <div class="big-icon">🏆</div>
+        <h2>Quiz Complete!</h2>
+        <div class="quiz-score">
+          <div class="big" id="qz-score"></div>
+          <p id="qz-result-msg"></p>
+        </div>
+        <button class="start-btn mt-24" onclick="startQuiz(qzCategory)">Try Again</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ===== VOCABULARY DATA =====
+const WORDS = [
+  // Shopping
+  { id:1,  word:"いくら",     romaji:"Ikura",       meaning:"多少錢",       category:"shopping", example_jp:"これはいくらですか？",                     example_zh:"這多少錢？" },
+  { id:2,  word:"免税",       romaji:"Menzei",      meaning:"免稅",         category:"shopping", example_jp:"免税はできますか？",                       example_zh:"可以免稅嗎？" },
+  { id:3,  word:"試着",       romaji:"Shichaku",    meaning:"試穿",         category:"shopping", example_jp:"これを試着してもいいですか？",             example_zh:"這可以試穿嗎？" },
+  { id:4,  word:"在庫",       romaji:"Zaiko",       meaning:"庫存",         category:"shopping", example_jp:"これの在庫はありますか？",                 example_zh:"這還有存貨嗎？" },
+  { id:5,  word:"袋",         romaji:"Fukuro",      meaning:"袋子",         category:"shopping", example_jp:"袋をいただけますか？",                     example_zh:"可以給我一個袋子嗎？" },
+  { id:6,  word:"お会計",     romaji:"Okaikei",     meaning:"結帳",         category:"shopping", example_jp:"お会計をお願いします。",                   example_zh:"麻煩結帳。" },
+  { id:7,  word:"割引",       romaji:"Waribiki",    meaning:"折扣",         category:"shopping", example_jp:"割引はありますか？",                       example_zh:"有折扣嗎？" },
+  { id:8,  word:"現金",       romaji:"Genkin",      meaning:"現金",         category:"shopping", example_jp:"現金で払います。",                         example_zh:"用現金支付。" },
+  { id:9,  word:"カード",     romaji:"Kādo",        meaning:"信用卡",       category:"shopping", example_jp:"クレジットカードは使えますか？",           example_zh:"可以使用信用卡嗎？" },
+  { id:10, word:"返品",       romaji:"Henpin",      meaning:"退貨",         category:"shopping", example_jp:"返品は可能ですか？",                       example_zh:"可以退貨嗎？" },
+  // Greetings
+  { id:11, word:"おはよう",       romaji:"Ohayō",         meaning:"早安",                 category:"greetings", example_jp:"おはようございます。",                           example_zh:"早安。（正式說法）" },
+  { id:12, word:"こんにちは",     romaji:"Konnichiwa",    meaning:"午安",                 category:"greetings", example_jp:"こんにちは、お元気ですか？",                     example_zh:"你好，你好嗎？" },
+  { id:13, word:"こんばんは",     romaji:"Konbanwa",      meaning:"晚安（見面用）",       category:"greetings", example_jp:"皆さん、こんばんは。",                           example_zh:"各位，晚上好。" },
+  { id:14, word:"おやすみ",       romaji:"Oyasumi",       meaning:"晚安（睡前用）",       category:"greetings", example_jp:"疲れたので、もうおやすみなさい。",               example_zh:"累了，先去睡了，晚安。" },
+  { id:15, word:"ありがとう",     romaji:"Arigatō",       meaning:"謝謝",                 category:"greetings", example_jp:"いつもありがとうございます。",                   example_zh:"一直以來都非常感謝。" },
+  { id:16, word:"すみません",     romaji:"Sumimasen",     meaning:"不好意思／對不起",     category:"greetings", example_jp:"すみません、ちょっといいですか？",               example_zh:"不好意思，可以打擾一下嗎？" },
+  { id:17, word:"さようなら",     romaji:"Sayōnara",      meaning:"再見",                 category:"greetings", example_jp:"では、さようなら。",                             example_zh:"那麼，再見了。" },
+  { id:18, word:"始めまして",     romaji:"Hajimemashite", meaning:"初次見面",             category:"greetings", example_jp:"始めまして、どうぞよろしく。",                   example_zh:"初次見面，請多指教。" },
+  { id:19, word:"お疲れ様",       romaji:"Otsukaresama",  meaning:"辛苦了",               category:"greetings", example_jp:"今日はお疲れ様でした。",                         example_zh:"今天辛苦了。" },
+  { id:20, word:"お願いします",   romaji:"Onegaishimasu", meaning:"拜託了／請",           category:"greetings", example_jp:"これをお願いします。",                           example_zh:"麻煩請給我這個 / 請幫我處理這個。" },
+];
+
+// ===== LOCAL STORAGE =====
+function loadRecords() {
+  try { return JSON.parse(localStorage.getItem('runku_records') || '{}'); } catch { return {}; }
+}
+function saveRecords(r) { localStorage.setItem('runku_records', JSON.stringify(r)); }
+
+function updateHomeStats() {
+  const r = loadRecords();
+  const vals = Object.values(r);
+  document.getElementById('s-total').textContent = WORDS.length;
+  document.getElementById('s-learning').textContent = vals.filter(v => v.familiarity < 2).length;
+  document.getElementById('s-review').textContent = vals.filter(v => v.familiarity >= 2 && v.familiarity < 3).length;
+  document.getElementById('s-mastered').textContent = vals.filter(v => v.familiarity >= 3).length;
+}
+
+function resetProgress() {
+  if (confirm('Are you sure you want to reset all learning progress?')) {
+    localStorage.removeItem('runku_records');
+    updateHomeStats();
+    alert('Progress has been reset.');
+  }
+}
+
+// ===== SPEECH =====
+function speakJP(text) {
+  if (!window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ja-JP';
+  u.rate = 0.85;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+}
+
+// ===== PAGE NAVIGATION =====
+function showPage(name) {
+  ['home','list','flashcard','quiz'].forEach(p => {
+    document.getElementById('page-' + p).classList.toggle('hidden', p !== name);
+  });
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.page === name);
+  });
+  if (name === 'home') updateHomeStats();
+  if (name === 'list') renderWordList('all');
+  if (name === 'flashcard') startFlashcards('all');
+  if (name === 'quiz') startQuiz('all');
+  window.scrollTo(0, 0);
+}
+
+// ===== WORD LIST =====
+function filterCategory(cat, btn) {
+  if (btn) {
+    btn.parentElement.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  renderWordList(cat);
+}
+
+function renderWordList(cat) {
+  const tbody = document.getElementById('word-tbody');
+  const filtered = cat === 'all' ? WORDS : WORDS.filter(w => w.category === cat);
+  tbody.innerHTML = filtered.map((w, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>
+        <div class="jp-word">${w.word}</div>
+        <div class="romaji">${w.romaji}</div>
+      </td>
+      <td>${w.meaning}</td>
+      <td>
+        <div style="font-size:14px;">${w.example_jp}</div>
+        <div class="example-text">${w.example_zh}</div>
+      </td>
+      <td><button class="speak-btn-sm" onclick="speakJP('${w.word}')">🔊</button></td>
+    </tr>
+  `).join('');
+}
+
+// ===== FLASHCARD =====
+let fcWords = [], fcIdx = 0, fcFlipped = false, fcCategory = 'all';
+
+function currentFCWord() { return fcWords[fcIdx] || WORDS[0]; }
+
+function startFlashcards(cat) {
+  fcCategory = cat;
+  // Update category tabs
+  document.querySelectorAll('#page-flashcard .cat-tab').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('fc-cat-' + cat);
+  if (btn) btn.classList.add('active');
+
+  fcWords = shuffle(cat === 'all' ? [...WORDS] : WORDS.filter(w => w.category === cat));
+  fcIdx = 0;
+  fcFlipped = false;
+  document.getElementById('fc-card-area').classList.remove('hidden');
+  document.getElementById('fc-complete').classList.add('hidden');
+  renderFC();
+}
+
+function renderFC() {
+  if (fcIdx >= fcWords.length) {
+    document.getElementById('fc-card-area').classList.add('hidden');
+    document.getElementById('fc-complete').classList.remove('hidden');
+    document.getElementById('fc-complete-msg').textContent = `You reviewed ${fcWords.length} words this session.`;
+    return;
+  }
+  const w = fcWords[fcIdx];
+  document.getElementById('fc-jp').textContent = w.word;
+  document.getElementById('fc-answer-word').textContent = w.word;
+  document.getElementById('fc-romaji').textContent = w.romaji;
+  document.getElementById('fc-meaning').textContent = w.meaning;
+  document.getElementById('fc-ex-jp').textContent = w.example_jp;
+  document.getElementById('fc-ex-zh').textContent = w.example_zh;
+  document.getElementById('fc-progress').textContent = `${fcIdx + 1} / ${fcWords.length}`;
+  document.getElementById('fc-bar').style.width = ((fcIdx + 1) / fcWords.length * 100) + '%';
+  document.getElementById('flashcard').classList.remove('flipped');
+  document.getElementById('fc-rate').style.visibility = 'hidden';
+  fcFlipped = false;
+}
+
+function flipCard() {
+  fcFlipped = !fcFlipped;
+  document.getElementById('flashcard').classList.toggle('flipped', fcFlipped);
+  document.getElementById('fc-rate').style.visibility = fcFlipped ? 'visible' : 'hidden';
+}
+
+function rateCard(familiarity) {
+  const w = fcWords[fcIdx];
+  const records = loadRecords();
+  const key = w.word;
+  const prev = records[key] || { familiarity: 0, review_count: 0, last_interval: 1 };
+  let interval;
+  if (familiarity <= 1) interval = 0.25;
+  else if (familiarity === 2) interval = prev.review_count === 0 ? 1 : prev.last_interval * 1.5;
+  else interval = prev.review_count === 0 ? 3 : prev.last_interval * 2;
+
+  const next = new Date();
+  next.setHours(next.getHours() + interval * 24);
+  records[key] = {
+    familiarity,
+    review_count: prev.review_count + 1,
+    last_interval: interval,
+    next_review: next.toISOString(),
+    last_reviewed: new Date().toISOString(),
+  };
+  saveRecords(records);
+  fcIdx++;
+  renderFC();
+}
+
+// ===== QUIZ =====
+let quizWords = [], qzIdx = 0, qzCorrect = 0, qzAnswered = false, qzCategory = 'all';
+
+function startQuiz(cat) {
+  qzCategory = cat;
+  document.querySelectorAll('#page-quiz .cat-tab').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('qz-cat-' + cat);
+  if (btn) btn.classList.add('active');
+
+  quizWords = shuffle(cat === 'all' ? [...WORDS] : WORDS.filter(w => w.category === cat));
+  qzIdx = 0; qzCorrect = 0; qzAnswered = false;
+  document.getElementById('quiz-area').classList.remove('hidden');
+  document.getElementById('quiz-result').classList.add('hidden');
+  renderQuiz();
+}
+
+function renderQuiz() {
+  if (qzIdx >= quizWords.length) {
+    document.getElementById('quiz-area').classList.add('hidden');
+    document.getElementById('quiz-result').classList.remove('hidden');
+    const pct = Math.round(qzCorrect / quizWords.length * 100);
+    document.getElementById('qz-score').textContent = pct + '%';
+    document.getElementById('qz-result-msg').textContent = `${qzCorrect} / ${quizWords.length} correct`;
+    return;
+  }
+  qzAnswered = false;
+  const w = quizWords[qzIdx];
+  document.getElementById('qz-question').textContent = w.word;
+  document.getElementById('qz-romaji').textContent = w.romaji;
+  document.getElementById('qz-progress').textContent = `${qzIdx + 1} / ${quizWords.length}`;
+  document.getElementById('qz-bar').style.width = ((qzIdx + 1) / quizWords.length * 100) + '%';
+
+  // Generate 4 options (1 correct + 3 wrong)
+  const wrongPool = WORDS.filter(x => x.id !== w.id);
+  const wrongs = shuffle(wrongPool).slice(0, 3);
+  const options = shuffle([w, ...wrongs]);
+
+  const container = document.getElementById('qz-options');
+  container.innerHTML = options.map(o =>
+    `<button class="quiz-opt" data-correct="${o.id === w.id}" data-id="${o.id}" onclick="answerQuiz(this, ${o.id === w.id}, ${w.id})">${o.meaning}</button>`
+  ).join('');
+}
+
+function answerQuiz(btn, isCorrect, correctId) {
+  if (qzAnswered) return;
+  qzAnswered = true;
+  if (isCorrect) {
+    btn.classList.add('correct');
+    qzCorrect++;
+  } else {
+    btn.classList.add('wrong');
+    // Reveal correct answer
+    document.querySelectorAll('.quiz-opt').forEach(b => {
+      if (b.dataset.correct === 'true') b.classList.add('reveal');
+    });
+  }
+  setTimeout(() => { qzIdx++; renderQuiz(); }, 1200);
+}
+
+// ===== KEYBOARD =====
+document.addEventListener('keydown', e => {
+  const fcPage = !document.getElementById('page-flashcard').classList.contains('hidden');
+  if (!fcPage) return;
+  if (e.code === 'Space') { e.preventDefault(); flipCard(); }
+  if (fcFlipped && e.key >= '1' && e.key <= '4') rateCard(parseInt(e.key) - 1);
+});
+
+// ===== UTILS =====
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ===== INIT =====
+updateHomeStats();
+</script>
+
+</body>
+</html>
