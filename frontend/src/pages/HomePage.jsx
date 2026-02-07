@@ -35,6 +35,13 @@ export default function HomePage() {
       link: '/stats',
       color: 'from-orange-400 to-orange-600',
     },
+    {
+      icon: '🐾',
+      title: '單字學習',
+      description: '翻牌記憶、小測驗，輕鬆學會新單字',
+      link: '/word-learning',
+      color: 'from-pink-400 to-pink-600',
+    },
   ];
 
   return (
