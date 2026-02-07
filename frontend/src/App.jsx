@@ -8,6 +8,7 @@ import StudyPage from './pages/StudyPage';
 import SpeakingPage from './pages/SpeakingPage';
 import GamesPage from './pages/GamesPage';
 import StatsPage from './pages/StatsPage';
+import WordLearningPage from './pages/WordLearningPage';
 
 // 導航列
 function Navigation() {
@@ -30,6 +31,7 @@ function Navigation() {
             <NavLink to="/speaking">語音練習</NavLink>
             <NavLink to="/games">小遊戲</NavLink>
             <NavLink to="/stats">統計</NavLink>
+            <NavLink to="/word-learning">單字學習</NavLink>
           </div>
 
           {/* Mobile Menu Button */}
@@ -54,6 +56,7 @@ function Navigation() {
               <MobileNavLink to="/speaking" onClick={() => setIsOpen(false)}>語音練習</MobileNavLink>
               <MobileNavLink to="/games" onClick={() => setIsOpen(false)}>小遊戲</MobileNavLink>
               <MobileNavLink to="/stats" onClick={() => setIsOpen(false)}>統計</MobileNavLink>
+              <MobileNavLink to="/word-learning" onClick={() => setIsOpen(false)}>單字學習</MobileNavLink>
             </div>
           </div>
         )}
@@ -97,6 +100,7 @@ function App() {
             <Route path="/speaking" element={<SpeakingPage />} />
             <Route path="/games" element={<GamesPage />} />
             <Route path="/stats" element={<StatsPage />} />
+            <Route path="/word-learning" element={<WordLearningPage />} />
           </Routes>
         </main>
       </div>
