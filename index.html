@@ -213,19 +213,34 @@
     .mem-card:active { transform: scale(0.94); }
 
     /* ===== WHACK ===== */
-    .whack-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    /* 整個畫面塞進一個視窗高度，九個洞不用捲動就看得到 */
+    body.whack-mode .container { padding: 12px 12px 12px; }
+    .whack-screen {
+      display: flex; flex-direction: column; gap: 10px;
+      height: calc(100dvh - 62px - 24px); min-height: 460px;
+    }
+    .whack-target {
+      background: var(--card); border-radius: 16px; padding: 10px 12px;
+      text-align: center; box-shadow: var(--shadow); flex: none;
+    }
+    .whack-target .q-hint { margin-top: 0; font-size: 12px; }
+    .whack-target .zh { font-size: clamp(26px, 7vw, 36px); font-weight: 900; line-height: 1.25; }
+    .whack-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+      gap: 8px; flex: 1; min-height: 0;
+    }
     .hole {
-      aspect-ratio: 1; border-radius: 18px; position: relative; overflow: hidden;
+      border-radius: 18px; position: relative; overflow: hidden; min-height: 0;
       background: radial-gradient(ellipse at 50% 85%, #A78BFA 0%, #EDE9FE 70%);
-      display: grid; place-items: end center; padding-bottom: 6px;
+      display: grid; place-items: end center; padding-bottom: 5px;
     }
     .mole {
-      width: 92%; border: none; border-radius: 14px; cursor: pointer;
+      width: 94%; border: none; border-radius: 14px; cursor: pointer;
       background: linear-gradient(135deg, #FBBF24, #F59E0B);
-      color: #78350F; font-weight: 900; font-size: 15px; font-family: inherit;
-      padding: 14px 4px; box-shadow: 0 4px 0 #B45309;
-      transform: translateY(120%); transition: transform .22s cubic-bezier(.34,1.56,.64,1);
-      word-break: break-word; line-height: 1.2;
+      color: #78350F; font-weight: 900; font-size: clamp(19px, 5.2vw, 26px); font-family: inherit;
+      padding: 12px 2px; box-shadow: 0 4px 0 #B45309;
+      transform: translateY(130%); transition: transform .3s cubic-bezier(.34,1.4,.64,1);
+      overflow-wrap: anywhere; line-height: 1.15;
     }
     .mole.up { transform: translateY(0); }
     .mole:active { transform: translateY(6px); }
@@ -400,7 +415,7 @@ const GAMES = {
   quiz:   { title:'快問快答', emoji:'🎯', color:'#8B5CF6', desc:'看中文選英文<br>10 題大挑戰' },
   listen: { title:'聽力大考驗', emoji:'👂', color:'#06B6D4', desc:'聽發音選中文<br>耳朵超靈敏' },
   memory: { title:'記憶翻牌', emoji:'🎴', color:'#EC4899', desc:'把英文和中文<br>配成一對' },
-  whack:  { title:'打地鼠', emoji:'🔨', color:'#F59E0B', desc:'45 秒內<br>敲對的單字' },
+  whack:  { title:'打地鼠', emoji:'🔨', color:'#F59E0B', desc:'60 秒內<br>敲對的單字' },
   spell:  { title:'拼字大師', emoji:'✏️', color:'#10B981', desc:'排出正確的<br>英文字母' },
   cards:  { title:'單字卡', emoji:'📖', color:'#3B82F6', desc:'先看一遍<br>再去玩遊戲' },
 };
@@ -523,7 +538,11 @@ function later(fn, ms) { const t = setTimeout(fn, ms); timers.push(t); return t;
 function every(fn, ms) { const t = setInterval(fn, ms); timers.push(t); return t; }
 function clearTimers() { timers.forEach(t => { clearTimeout(t); clearInterval(t); }); timers = []; }
 
-function render(html) { app.innerHTML = html; window.scrollTo(0, 0); }
+function render(html) {
+  document.body.classList.remove('whack-mode');
+  app.innerHTML = html;
+  window.scrollTo(0, 0);
+}
 
 function go(screen, arg) {
   clearTimers();
@@ -852,25 +871,33 @@ function finishMemory() {
 /* ===== 11. 遊戲四：打地鼠 ===== */
 let whack = null;
 
+/* 節奏設定：地鼠停留久一點，小朋友有時間看清楚單字 */
+const WHACK_UP_MS = 5200;   // 地鼠停留時間
+const WHACK_GAP_MS = 700;   // 每一輪之間的空檔
+const WHACK_TIME = 60;      // 一局秒數
+
 function startWhack(cat) {
-  whack = { cat, score: 0, hit: 0, miss: 0, time: 45, round: 0, target: null, active: false };
+  whack = { cat, score: 0, hit: 0, miss: 0, time: WHACK_TIME, round: 0, target: null, active: false };
   render(`
-    <div class="hud">
-      <div class="hud-pill">⏰ <span id="w-time">45</span> 秒</div>
-      <div class="hud-pill">🔨 敲中 <span id="w-hit">0</span></div>
-      <div class="hud-pill">💥 <span id="w-miss">0</span></div>
+    <div class="whack-screen">
+      <div class="hud" style="margin-bottom:0">
+        <div class="hud-pill">⏰ <span id="w-time">${WHACK_TIME}</span> 秒</div>
+        <div class="hud-pill">🔨 <span id="w-hit">0</span></div>
+        <div class="hud-pill">💥 <span id="w-miss">0</span></div>
+        <button class="icon-btn" onclick="go('setup','whack')" title="結束遊戲">✖️</button>
+      </div>
+      <div class="whack-target">
+        <div class="q-hint">敲敲看！這個字的英文在哪裡？</div>
+        <div class="zh" id="w-target">準備…</div>
+      </div>
+      <div class="whack-grid" id="w-grid">
+        ${Array.from({ length: 9 }, (_, i) => `
+          <div class="hole"><button class="mole" id="mole-${i}" onclick="hitMole(${i})"></button></div>
+        `).join('')}
+      </div>
     </div>
-    <div class="q-card" style="padding:16px">
-      <div class="q-hint">敲敲看！這個字的英文在哪裡？</div>
-      <div class="q-zh" id="w-target" style="font-size:30px">準備…</div>
-    </div>
-    <div class="whack-grid" id="w-grid">
-      ${Array.from({ length: 9 }, (_, i) => `
-        <div class="hole"><button class="mole" id="mole-${i}" onclick="hitMole(${i})"></button></div>
-      `).join('')}
-    </div>
-    <div class="btn-row"><button class="btn secondary" onclick="go('setup','whack')">← 結束遊戲</button></div>
   `);
+  document.body.classList.add('whack-mode');
   every(() => {
     whack.time--;
     const el = document.getElementById('w-time');
@@ -906,7 +933,7 @@ function nextWhackRound() {
     if (!m) return;
     m.textContent = words[k].en;
     whack.moles[h] = words[k];
-    later(() => m.classList.add('up'), 60 * k);
+    later(() => m.classList.add('up'), 110 * k);
   });
   sfx.pop();
 
@@ -916,9 +943,9 @@ function nextWhackRound() {
       recordAnswer(whack.target.id, false);
       updateWhackHud();
       hideMoles();
-      later(nextWhackRound, 450);
+      later(nextWhackRound, WHACK_GAP_MS);
     }
-  }, 3200);
+  }, WHACK_UP_MS);
 }
 function hideMoles() {
   whack.active = false;
@@ -952,7 +979,8 @@ function hitMole(i) {
   }
   recordAnswer(whack.target.id, ok);
   updateWhackHud();
-  later(() => { hideMoles(); later(nextWhackRound, 350); }, ok ? 450 : 900);
+  /* 答錯時多停一下，讓小朋友看清楚正確答案 */
+  later(() => { hideMoles(); later(nextWhackRound, WHACK_GAP_MS); }, ok ? 700 : 1600);
 }
 function updateWhackHud() {
   const h = document.getElementById('w-hit'), m = document.getElementById('w-miss');
