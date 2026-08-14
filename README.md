@@ -1,168 +1,112 @@
-# RUNKU 📚
+# RUNKU 🎮📚
 
-智慧語言學習平台 - 透過間隔重複、語音練習和趣味遊戲，讓學習更有效率！
+單字遊戲樂園 — 用遊戲幫小朋友背英文單字！
 
-## ✨ 功能特色
+單字來源：**20260729 U6~U10 英文聽寫表**（共 58 個單字）
 
-### 1️⃣ 說出來（語音練習）
-- 🎤 使用 Web Speech API 進行語音辨識
-- 🔊 即時發音示範
-- 📊 自動評分和反饋
-- 🎯 中文→英文 / 英文→中文 雙向練習
+👉 線上遊玩：https://s0914712.github.io/RUNKU/
 
-### 2️⃣ 使用他（實際應用）
-- 📝 AI 自動生成例句（透過 GitHub Actions）
-- 💡 用法提示和情境說明
-- 🎓 難度分級系統
+## 🎯 六種學習模式
 
-### 3️⃣ 複習（間隔重複）
-- 🧠 SM-2 演算法智慧排程
-- 📅 自動計算下次複習時間
-- 📈 學習進度追蹤
-- 💾 LocalStorage 本地儲存
+| 模式 | 玩法 | 獎勵 |
+|------|------|------|
+| 🎯 **快問快答** | 看中文 + 圖示，從 4 個選項選出正確英文，共 10 題 | 每題 10 顆星 |
+| 👂 **聽力大考驗** | 聽英文發音（可重複播放），選出正確中文 | 每題 12 顆星 |
+| 🎴 **記憶翻牌** | 12 張牌，把英文和中文配成一對，翻牌越少分數越高 | 每對 20 顆星 + 效率獎勵 |
+| 🔨 **打地鼠** | 45 秒內敲中畫面上正確的英文單字，會記錄最佳成績 | 每次敲中 15 顆星 |
+| ✏️ **拼字大師** | 點選字母磁磚，把單字拼出來，可聽發音提示 | 每題 15 顆星 |
+| 📖 **單字卡** | 依主題瀏覽全部單字，點卡片聽發音，顯示熟練度星星 | — |
 
-### 🎮 趣味小遊戲
-- 🦫 **單字打地鼠**: 考驗反應力
-- 🎴 **記憶翻牌**: 訓練記憶力
-- ✏️ **拼字挑戰**: 練習拼寫
+## ✨ 特色
 
-### 📊 學習統計
-- 📈 每日學習記錄
-- 🎯 精通度分析
-- 💾 資料匯出/匯入
-- 🏆 學習建議
+- 🔊 **真人發音**：使用瀏覽器 Web Speech API 唸出英文（速度放慢，適合小朋友）
+- ⭐ **星星獎勵系統**：答對累積星星，激勵持續練習
+- 📊 **熟練度追蹤**：每個單字依答對／答錯次數顯示 0～3 顆星
+- 🗂️ **七大主題**：基礎用語、動物、生活物品、職業人物、交通與樂器、數字 1-10、身體部位
+- 💾 **自動存檔**：進度存在瀏覽器 LocalStorage，關掉再打開還在
+- 📱 **手機優先**：大按鈕、大字體，平板手機都好按
+- 🎉 **即時回饋**：音效、動畫、彩帶慶祝
 
-## 🚀 快速開始
+## 📖 單字內容（U6~U10）
 
-### 前置需求
-- Node.js 18+
-- GitHub 帳號
+| 主題 | 單字 |
+|------|------|
+| 基礎用語 | what, this, that, these, those, flower |
+| 動物 | bear, bird, tiger, ant, zebra, octopus, horse, fish, lion, dog, cat, snake, duck, monkey |
+| 生活物品 | mouse (mice), umbrella, watch (watches), bench (benches), window, door, kite, cloud, toy |
+| 職業人物 | nurse, dancer, doctor |
+| 交通與樂器 | violin, train, truck, piano |
+| 數字 | one ~ ten |
+| 身體部位 | face, hair, eye(s), mouth, hand(s), ear(s), stomach, shoulder, knee, arm, foot (feet), leg |
 
-### 1. Clone 專案
-\`\`\`bash
+單字卡上會標示不規則變化與冠詞提示，例如 `one mouse - two mice`、`an umbrella`、`one foot - two feet`。
+
+## 🚀 使用方式
+
+### 直接遊玩
+開啟 https://s0914712.github.io/RUNKU/ 即可，不需要安裝任何東西。
+
+### 本機執行
+```bash
 git clone https://github.com/s0914712/RUNKU.git
 cd RUNKU
-\`\`\`
+# 直接用瀏覽器打開 index.html，或起一個簡易伺服器：
+npx http-server .
+```
 
-### 2. 安裝依賴
-\`\`\`bash
-cd frontend
-npm install
-\`\`\`
+`index.html` 是**單一檔案應用程式**，不需要建置流程、不依賴任何外部資源。
 
-### 3. 本地開發
-\`\`\`bash
-npm run dev
-\`\`\`
+## ✏️ 更換單字
 
-訪問 http://localhost:5173
+要換成新一課的單字時，編輯 `index.html` 裡的 `WORDS` 陣列即可：
 
-### 4. 建置部署
-\`\`\`bash
-npm run build
-\`\`\`
+```js
+{ id:59, en:'apple', zh:'蘋果', cat:'things', emoji:'🍎' },
+// 有不規則複數時再加上：
+{ id:60, en:'child', zh:'小孩', cat:'people', emoji:'🧒', plural:'children', note:'one child - two children' },
+```
+
+`cat` 可用的主題：`basics`、`animals`、`things`、`people`、`vehicles`、`numbers`、`body`
+（主題定義在同檔案的 `CATS` 物件中，可自行增減。）
+
+同一份單字也維護在兩個地方，方便其他程式讀取：
+- `words` — 純文字 `中文-英文` 格式（React 版 `WordLearningPage` 會讀這個檔）
+- `data/vocabulary.json` — 含主題、emoji、複數變化的完整結構
 
 ## 📁 專案結構
 
-\`\`\`
+```
 RUNKU/
-├── .github/
-│   └── workflows/
-│       ├── generate_examples.yml  # 自動生成例句
-│       └── deploy.yml            # 部署到 GitHub Pages
-├── scripts/
-│   └── generate_examples.py      # 生成例句腳本
+├── index.html                 # 🎮 主程式（單檔遊戲樂園，GitHub Pages 首頁）
+├── words                      # 單字純文字檔（中文-英文）
 ├── data/
-│   └── vocabulary.json            # 單字資料庫（自動生成）
-├── words                          # 原始單字檔案
-├── frontend/
-│   ├── src/
-│   │   ├── components/           # React 元件
-│   │   │   ├── Flashcard.jsx
-│   │   │   ├── SpeakingPractice.jsx
-│   │   │   └── Games/
-│   │   ├── pages/                # 頁面元件
-│   │   ├── hooks/                # 自定義 Hooks
-│   │   └── utils/                # 工具函式
-│   ├── package.json
-│   └── vite.config.js
-└── README.md
-\`\`\`
+│   └── vocabulary.json        # 單字結構化資料（主題／emoji／複數）
+├── frontend/                  # React + Vite 版本（實驗中）
+│   └── src/
+│       ├── components/
+│       ├── pages/
+│       └── utils/
+└── .github/workflows/
+    └── deploy.yml             # GitHub Pages 部署
+```
 
-## 🔧 配置
+## 🌐 瀏覽器支援
 
-### GitHub Secrets 設定
-在 GitHub Repository Settings → Secrets 中新增：
+| 功能 | 支援 |
+|------|------|
+| 遊戲主體 | 所有現代瀏覽器 |
+| 英文發音 | Chrome / Edge / Safari（需系統有英文語音）|
+| 音效 | 支援 Web Audio API 的瀏覽器 |
 
-- \`APERTIS_API_KEY\`: Apertis AI API 金鑰（用於生成例句）
+> 提示：iPad / iPhone 首次需要點一下畫面才會有聲音（瀏覽器的音訊限制）。
 
-### 單字檔案格式
-在 \`words\` 檔案中，每行一個單字：
+## 🎓 給家長和老師的建議玩法
 
-\`\`\`
-開放-open
-學習-learn
-挑戰-challenge
-\`\`\`
-
-或只有英文：
-\`\`\`
-apple
-banana
-computer
-\`\`\`
-
-### GitHub Pages 部署
-1. 前往 Repository Settings → Pages
-2. Source 選擇 "GitHub Actions"
-3. 推送到 main branch 後自動部署
-
-## 🎯 使用說明
-
-### 語音功能
-- **首次使用**: 需要允許瀏覽器麥克風權限
-- **最佳瀏覽器**: Chrome、Edge
-- **建議環境**: 安靜的環境中練習
-
-### 資料備份
-1. 進入「統計」頁面
-2. 點擊「匯出 JSON」下載備份
-3. 使用「匯入」功能恢復資料
-
-### 跨裝置同步
-目前使用 LocalStorage 儲存，建議：
-- 定期匯出備份
-- 在新裝置上匯入資料
-
-## 🛠️ 技術棧
-
-### 前端
-- React 18
-- Vite
-- Tailwind CSS
-- React Router
-
-### API
-- Apertis AI (Grok 4.1)
-- Web Speech API
-- GitHub API
-
-### 部署
-- GitHub Pages
-- GitHub Actions
-
-## 📝 待辦事項
-
-- [ ] 新增更多小遊戲
-- [ ] 實作雲端同步功能
-- [ ] 加入學習排行榜
-- [ ] 支援多語言介面
-- [ ] PWA 離線功能
-- [ ] 社群分享功能
-
-## 🤝 貢獻
-
-歡迎提交 Issue 和 Pull Request！
+1. **先看單字卡** 📖 — 把該主題的單字聽過一遍
+2. **玩快問快答** 🎯 — 確認中英文對應記住了
+3. **玩聽力大考驗** 👂 — 訓練聽力，聽寫前必玩
+4. **玩拼字大師** ✏️ — 準備聽寫的拼字部分
+5. **打地鼠 / 記憶翻牌** 🔨🎴 — 複習加速反應，當作獎勵時間
 
 ## 📄 授權
 
@@ -171,11 +115,3 @@ MIT License
 ## 👤 作者
 
 Chen - [@s0914712](https://github.com/s0914712)
-
-## 🙏 致謝
-
-- Apertis AI 提供免費 API
-- Web Speech API
-- Tailwind CSS
-- React 社群
-\`\`\`
