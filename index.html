@@ -54,6 +54,32 @@
       background: none; border: none; font-family: inherit;
     }
     .topbar-right { display: flex; align-items: center; gap: 8px; }
+    .who-chip {
+      background: #EEF2FF; border: 2px solid #C7D2FE; border-radius: 999px;
+      padding: 6px 12px; font-size: 14px; font-weight: 800; cursor: pointer;
+      font-family: inherit; color: var(--text); display: flex; align-items: center; gap: 4px;
+      transition: transform .15s;
+    }
+    .who-chip:active { transform: scale(0.94); }
+
+    /* ===== 入口：選使用者 ===== */
+    .who-grid { display: grid; gap: 16px; grid-template-columns: 1fr; max-width: 460px; margin: 0 auto; }
+    .who-card {
+      background: var(--card); border: none; border-radius: var(--radius);
+      padding: 24px 20px; cursor: pointer; box-shadow: var(--shadow);
+      font-family: inherit; color: var(--text); text-align: left;
+      display: flex; align-items: center; gap: 18px;
+      position: relative; overflow: hidden; transition: transform .18s, box-shadow .18s;
+    }
+    .who-card::before {
+      content: ''; position: absolute; inset: 0 auto 0 0; width: 8px; background: var(--accent);
+    }
+    .who-card:active { transform: scale(0.97); box-shadow: var(--shadow-lg); }
+    .who-card .wc-emoji { font-size: 54px; line-height: 1; flex: none; }
+    .who-card .wc-name { font-size: 26px; font-weight: 900; }
+    .who-card .wc-sub { font-size: 13px; color: var(--text-light); font-weight: 700; margin-top: 3px; }
+    .who-card .wc-meta { font-size: 13px; font-weight: 800; color: var(--accent); margin-top: 7px; }
+    .who-card .wc-go { margin-left: auto; font-size: 26px; color: var(--accent); flex: none; }
     .star-badge {
       background: linear-gradient(135deg, #FDE68A, #F59E0B);
       color: #78350F; font-weight: 800; font-size: 15px;
@@ -308,6 +334,11 @@
       transition: transform .15s; border: none; font-family: inherit; color: var(--text);
     }
     .word-card:active { transform: scale(0.96); }
+    .word-card { position: relative; }
+    .word-card .wno {
+      position: absolute; top: 7px; left: 9px; font-size: 11px; font-weight: 900;
+      color: #A78BFA; letter-spacing: .5px;
+    }
     .word-card .we { font-size: 34px; }
     .word-card .wen { font-size: 18px; font-weight: 800; margin-top: 4px; }
     .word-card .wzh { font-size: 14px; color: var(--text-light); font-weight: 700; }
@@ -351,7 +382,8 @@
 <header class="topbar">
   <div class="topbar-inner">
     <button class="logo" onclick="go('home')">🎮 RUNKU</button>
-    <div class="topbar-right">
+    <div class="topbar-right" id="topbar-right" style="visibility:hidden">
+      <button class="who-chip" id="who-chip" onclick="go('entry')" title="換人玩"></button>
       <div class="star-badge">⭐ <span id="star-count">0</span></div>
       <button class="icon-btn" onclick="go('home')" title="回首頁">🏠</button>
     </div>
@@ -367,7 +399,7 @@
    ========================================================= */
 
 /* ===== 1. 單字資料 ===== */
-const CATS = {
+const CATS_MEI = {
   basics:   { label: '基礎用語',    emoji: '✨',   color: '#8B5CF6' },
   animals:  { label: '動物',        emoji: '🦁',   color: '#F59E0B' },
   things:   { label: '生活物品',    emoji: '🪁',   color: '#3B82F6' },
@@ -377,7 +409,7 @@ const CATS = {
   body:     { label: '身體部位',    emoji: '✋',   color: '#06B6D4' },
 };
 
-const WORDS = [
+const WORDS_MEI = [
   { id:1,  en:'what',     zh:'什麼',   cat:'basics', emoji:'❓' },
   { id:2,  en:'this',     zh:'這個',   cat:'basics', emoji:'👉' },
   { id:3,  en:'that',     zh:'那個',   cat:'basics', emoji:'👈' },
@@ -444,6 +476,85 @@ const WORDS = [
   { id:58, en:'leg',      zh:'腿',     cat:'body', emoji:'🦵' },
 ];
 
+/* ---- 姐姐：動作單字 + 單字表 73~95 ---- */
+const CATS_JIE = {
+  verbs:  { label: '動作單字',   emoji: '🏃', color: '#8B5CF6' },
+  food:   { label: '食物',       emoji: '🍟', color: '#F59E0B' },
+  school: { label: '學校',       emoji: '🏫', color: '#3B82F6' },
+  life:   { label: '生活用語',   emoji: '🏠', color: '#10B981' },
+};
+
+const WORDS_JIE = [
+  /* 手寫動作單字 1~16 */
+  { id:201, no:1,  en:'buy',        zh:'買',           cat:'verbs', emoji:'🛒' },
+  { id:202, no:2,  en:'fly',        zh:'飛',           cat:'verbs', emoji:'🛫' },
+  { id:203, no:3,  en:'fly a kite', zh:'放風箏',       cat:'verbs', emoji:'🪁' },
+  { id:204, no:4,  en:'dance',      zh:'跳舞',         cat:'verbs', emoji:'💃' },
+  { id:205, no:5,  en:'study',      zh:'學習',         cat:'verbs', emoji:'📚' },
+  { id:206, no:6,  en:'fight',      zh:'打架',         cat:'verbs', emoji:'🥊' },
+  { id:207, no:7,  en:'cry',        zh:'哭',           cat:'verbs', emoji:'😢' },
+  { id:208, no:8,  en:'brush',      zh:'刷、梳',       cat:'verbs', emoji:'🪥' },
+  { id:209, no:9,  en:'feel',       zh:'感覺、感到',   cat:'verbs', emoji:'💭' },
+  { id:210, no:10, en:'ride',       zh:'騎、搭乘',     cat:'verbs', emoji:'🚴' },
+  { id:211, no:11, en:'want',       zh:'想要',         cat:'verbs', emoji:'🙋' },
+  { id:212, no:12, en:'like',       zh:'喜歡',         cat:'verbs', emoji:'❤️' },
+  { id:213, no:13, en:'read',       zh:'閱讀',         cat:'verbs', emoji:'📖' },
+  { id:214, no:14, en:'play',       zh:'玩',           cat:'verbs', emoji:'🎮' },
+  { id:215, no:15, en:'talk',       zh:'說話、談話',   cat:'verbs', emoji:'💬' },
+  { id:216, no:16, en:'wish',       zh:'希望、許願',   cat:'verbs', emoji:'🌠' },
+
+  /* 單字表 73~95 */
+  { id:73, no:73, en:'carrot',    zh:'胡蘿蔔',       cat:'food', emoji:'🥕' },
+  { id:74, no:74, en:'cat',       zh:'貓',           cat:'life', emoji:'🐱' },
+  { id:75, no:75, en:'catch',     zh:'抓住、接住',   cat:'verbs', emoji:'🧤',
+    plural:'catches', note:'catch - catches｜catch a ball 接球' },
+  { id:76, no:76, en:'chair',     zh:'椅子',         cat:'school', emoji:'🪑' },
+  { id:77, no:77, en:'clean',     zh:'乾淨的、打掃', cat:'life', emoji:'🧼',
+    note:'clean (adj) 乾淨的｜clean (v) 清潔、打掃' },
+  { id:78, no:78, en:'child',     zh:'小孩',         cat:'life', emoji:'🧒',
+    plural:'children', note:'child - children' },
+  { id:79, no:79, en:'chocolate', zh:'巧克力',       cat:'food', emoji:'🍫' },
+  { id:80, no:80, en:'choose',    zh:'選擇',         cat:'verbs', emoji:'🤔' },
+  { id:81, no:81, en:'clap',      zh:'拍手、擊掌',   cat:'verbs', emoji:'👏' },
+  { id:82, no:82, en:'class',     zh:'班級、課',     cat:'school', emoji:'📋' },
+  { id:83, no:83, en:'classmate', zh:'同班同學',     cat:'school', emoji:'👫' },
+  { id:84, no:84, en:'classroom', zh:'教室',         cat:'school', emoji:'🏫' },
+  { id:85, no:85, en:'chicken',   zh:'雞肉、雞',     cat:'food', emoji:'🍗' },
+  { id:86, no:86, en:'chips',     zh:'薯條',         cat:'food', emoji:'🍟',
+    note:'chips (英)｜(French) fries (美)' },
+  { id:87, no:87, en:'crisps',    zh:'洋芋片',       cat:'food', emoji:'🥔',
+    note:'crisps (英)｜chips (美)' },
+  { id:88, no:88, en:'close',     zh:'接近的、關上', cat:'life', emoji:'🚪',
+    note:'close (adj) 接近的｜close (v) 關、閉上' },
+  { id:89, no:89, en:'closed',    zh:'關閉的、打烊的', cat:'life', emoji:'🔒' },
+  { id:90, no:90, en:'clothes',   zh:'衣服、衣物',   cat:'life', emoji:'👕' },
+  { id:91, no:91, en:'coconut',   zh:'椰子',         cat:'food', emoji:'🥥' },
+  { id:92, no:92, en:'color',     zh:'顏色',         cat:'life', emoji:'🎨',
+    note:'color (美)｜colour (英)' },
+  { id:93, no:93, en:'come',      zh:'來',           cat:'verbs', emoji:'🚶' },
+  { id:94, no:94, en:'complete',  zh:'完成',         cat:'school', emoji:'✅' },
+  { id:95, no:95, en:'computer',  zh:'電腦',         cat:'school', emoji:'💻' },
+];
+
+/* ===== 1b. 使用者（姐姐／妹妹各自的單字表與進度） ===== */
+const PROFILES = {
+  jie: {
+    key: 'jie', name: '姐姐', emoji: '👩', color: '#3B82F6',
+    sub: '動作單字 + 單字表 73~95',
+    storeKey: 'runku_jie_v1', words: WORDS_JIE, cats: CATS_JIE, showNo: true,
+  },
+  mei: {
+    key: 'mei', name: '妹妹', emoji: '👧', color: '#EC4899',
+    sub: 'U6~U10 聽寫表',
+    storeKey: 'runku_kids_v1', words: WORDS_MEI, cats: CATS_MEI, showNo: false,
+  },
+};
+
+/* 目前選到的使用者，選好之後 WORDS / CATS 就指向那個人的單字表 */
+let profile = null;
+let WORDS = [];
+let CATS = {};
+
 const GAMES = {
   quiz:   { title:'快問快答', emoji:'🎯', color:'#8B5CF6', desc:'看中文選英文<br>10 題大挑戰' },
   listen: { title:'聽力大考驗', emoji:'👂', color:'#06B6D4', desc:'聽發音選中文<br>耳朵超靈敏' },
@@ -453,14 +564,17 @@ const GAMES = {
   cards:  { title:'單字卡', emoji:'📖', color:'#3B82F6', desc:'先看一遍<br>再去玩遊戲' },
 };
 
-/* ===== 2. 進度儲存 ===== */
-const STORE_KEY = 'runku_kids_v1';
+/* ===== 2. 進度儲存（每個使用者一份，互不影響） ===== */
 const DEFAULT_SETTINGS = { whackSec: 5, whackDiff: 'normal' };
-let store = loadStore();
+let STORE_KEY = null;
+let store = emptyStore();
 
-function loadStore() {
+function emptyStore() {
+  return { stars: 0, words: {}, best: { whack: {} }, settings: Object.assign({}, DEFAULT_SETTINGS) };
+}
+function loadStore(key) {
   try {
-    const raw = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+    const raw = JSON.parse(localStorage.getItem(key) || '{}');
     const best = (raw.best && typeof raw.best === 'object') ? raw.best : {};
     /* 舊版把打地鼠紀錄存成單一數字，轉成依難度分開存 */
     if (typeof best.whack === 'number') best.whack = { normal: best.whack };
@@ -472,12 +586,19 @@ function loadStore() {
       settings: Object.assign({}, DEFAULT_SETTINGS, raw.settings || {}),
     };
   } catch {
-    return { stars: 0, words: {}, best: { whack: {} }, settings: Object.assign({}, DEFAULT_SETTINGS) };
+    return emptyStore();
   }
 }
 function saveStore() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch {}
+  if (STORE_KEY) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch {}
+  }
   document.getElementById('star-count').textContent = store.stars;
+}
+/* 讀某個使用者的星星數（入口畫面用，不會切換目前使用者） */
+function starsOf(profileKey) {
+  try { return JSON.parse(localStorage.getItem(PROFILES[profileKey].storeKey) || '{}').stars || 0; }
+  catch { return 0; }
 }
 function addStars(n) { store.stars += n; saveStore(); }
 
@@ -590,19 +711,62 @@ function render(html) {
 function go(screen, arg) {
   clearTimers();
   if (window.speechSynthesis) speechSynthesis.cancel();
+  if (screen === 'entry') return renderEntry();
   if (screen === 'home') return renderHome();
   if (screen === 'cards') return renderCards(arg || 'all');
   if (screen === 'setup') return renderSetup(arg);
 }
 
-/* ===== 5. 首頁 ===== */
-function renderHome() {
-  const total = WORDS.length;
+/* ===== 5. 入口：姐姐／妹妹 ===== */
+function renderEntry() {
+  profile = null;
+  STORE_KEY = null;
+  document.getElementById('topbar-right').style.visibility = 'hidden';
   render(`
     <div class="hero">
       <div class="hero-emoji">🎡</div>
       <h1>單字<span>遊戲樂園</span></h1>
-      <p>U6～U10 共 ${total} 個單字，邊玩邊背！</p>
+      <p>今天是誰要玩呢？</p>
+    </div>
+    <div class="who-grid">
+      ${Object.values(PROFILES).map(p => `
+        <button class="who-card" style="--accent:${p.color}" onclick="pickProfile('${p.key}')">
+          <div class="wc-emoji">${p.emoji}</div>
+          <div>
+            <div class="wc-name">${p.name}</div>
+            <div class="wc-sub">${p.sub}</div>
+            <div class="wc-meta">${p.words.length} 個單字　⭐ ${starsOf(p.key)}</div>
+          </div>
+          <div class="wc-go">▶</div>
+        </button>
+      `).join('')}
+    </div>
+  `);
+}
+
+function pickProfile(key) {
+  profile = PROFILES[key];
+  WORDS = profile.words;
+  CATS = profile.cats;
+  STORE_KEY = profile.storeKey;
+  store = loadStore(STORE_KEY);
+  currentCat = 'all';
+  const chip = document.getElementById('who-chip');
+  chip.textContent = `${profile.emoji} ${profile.name} ⇄`;
+  document.getElementById('topbar-right').style.visibility = 'visible';
+  sfx.pop();
+  renderHome();
+}
+
+/* ===== 5b. 首頁 ===== */
+function renderHome() {
+  if (!profile) return renderEntry();
+  const total = WORDS.length;
+  render(`
+    <div class="hero">
+      <div class="hero-emoji">${profile.emoji}</div>
+      <h1>${profile.name}的<span>單字樂園</span></h1>
+      <p>${profile.sub}　共 ${total} 個單字，邊玩邊背！</p>
     </div>
 
     <div class="stats-row">
@@ -624,15 +788,16 @@ function renderHome() {
     </div>
 
     <div class="btn-row">
-      <button class="btn secondary" onclick="resetProgress()">🔄 清除進度</button>
+      <button class="btn secondary" onclick="go('entry')">🔄 換人玩</button>
+      <button class="btn secondary" onclick="resetProgress()">🗑️ 清除進度</button>
     </div>
   `);
   saveStore();
 }
 
 function resetProgress() {
-  if (!confirm('確定要把星星和學習紀錄全部清空嗎？')) return;
-  store = { stars: 0, words: {}, best: { whack: {} }, settings: Object.assign({}, DEFAULT_SETTINGS) };
+  if (!confirm(`確定要把${profile.name}的星星和學習紀錄全部清空嗎？（不會影響另一個人）`)) return;
+  store = emptyStore();
   saveStore();
   renderHome();
   toast('已清除進度');
@@ -1120,8 +1285,11 @@ function finishWhack() {
 let spell = null;
 
 function startSpell(cat) {
-  const pool = wordsOf(cat);
-  spell = { cat, list: shuffle(pool).slice(0, Math.min(8, pool.length)), i: 0, right: 0, typed: [], done: false };
+  /* 片語（fly a kite）沒辦法用字母磁磚拼，拼字遊戲只收單一單字 */
+  const all = wordsOf(cat);
+  const pool = all.filter(w => /^[a-zA-Z]+$/.test(w.en));
+  const usable = pool.length ? pool : all;
+  spell = { cat, list: shuffle(usable).slice(0, Math.min(8, usable.length)), i: 0, right: 0, typed: [], done: false };
   renderSpellQ();
 }
 function renderSpellQ() {
@@ -1249,6 +1417,7 @@ function renderCards(cat) {
         const m = masteryOf(w.id);
         return `
         <button class="word-card" onclick="speak('${esc(w.en)}'); sfx.pop();">
+          ${profile.showNo && w.no ? `<div class="wno">#${w.no}</div>` : ''}
           <div class="we">${w.emoji}</div>
           <div class="wen">${esc(w.en)}</div>
           <div class="wzh">${w.zh}</div>
@@ -1264,9 +1433,8 @@ function renderCards(cat) {
   `);
 }
 
-/* ===== 14. 啟動 ===== */
-saveStore();
-renderHome();
+/* ===== 14. 啟動：先選使用者 ===== */
+renderEntry();
 </script>
 </body>
 </html>

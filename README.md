@@ -2,9 +2,19 @@
 
 單字遊戲樂園 — 用遊戲幫小朋友背英文單字！
 
-單字來源：**20260729 U6~U10 英文聽寫表**（共 58 個單字）
-
 👉 線上遊玩：https://s0914712.github.io/RUNKU/
+
+## 👩👧 兩個人，兩份單字
+
+打開網站第一個畫面先選人，兩個人的單字表、星星、熟練度、遊戲設定完全分開，互不影響：
+
+| 使用者 | 單字來源 | 單字數 | 主題分類 |
+|--------|---------|-------|---------|
+| 👩 **姐姐** | 手寫動作單字 1~16 + 英文單字表 73~95 | 39 | 動作單字、食物、學校、生活用語 |
+| 👧 **妹妹** | 20260729 U6~U10 英文聽寫表 | 58 | 基礎用語、動物、生活物品、職業人物、交通與樂器、數字、身體部位 |
+
+姐姐的單字卡會顯示單字表上的編號（#1～#16、#73～#95），方便照號碼默寫。
+玩的時候右上角會顯示現在是誰在玩，點一下就能換人。
 
 ## 🎯 六種學習模式
 
@@ -44,7 +54,22 @@
 
 設定會自動記住，下次打開還是同樣的設定；最佳紀錄依難度分開記錄，不同難度不互相比較。
 
-## 📖 單字內容（U6~U10）
+## 📖 姐姐的單字內容
+
+| 主題 | 單字 |
+|------|------|
+| 動作單字 | buy, fly, fly a kite, dance, study, fight, cry, brush, feel, ride, want, like, read, play, talk, wish, catch, choose, clap, come |
+| 食物 | carrot, chocolate, chicken, chips（薯條）, crisps（洋芋片）, coconut |
+| 學校 | chair, class, classmate, classroom, complete, computer |
+| 生活用語 | cat, clean, child, close, closed, clothes, color |
+
+單字卡上會標示英美用法與變化，例如 `chips (英)｜(French) fries (美)`、`crisps (英)｜chips (美)`、
+`color (美)｜colour (英)`、`child - children`、`catch - catches｜catch a ball 接球`、
+`clean (adj) 乾淨的｜clean (v) 清潔、打掃`、`close (adj) 接近的｜close (v) 關、閉上`。
+
+> 拼字大師會自動跳過 `fly a kite` 這種片語（字母磁磚拼不出空格），其他遊戲照常出現。
+
+## 📖 妹妹的單字內容（U6~U10）
 
 | 主題 | 單字 |
 |------|------|
@@ -75,7 +100,8 @@ npx http-server .
 
 ## ✏️ 更換單字
 
-要換成新一課的單字時，編輯 `index.html` 裡的 `WORDS` 陣列即可：
+要換成新一課的單字時，編輯 `index.html` 裡對應的陣列即可
+（姐姐是 `WORDS_JIE`、妹妹是 `WORDS_MEI`）：
 
 ```js
 { id:59, en:'apple', zh:'蘋果', cat:'things', emoji:'🍎' },
@@ -83,21 +109,34 @@ npx http-server .
 { id:60, en:'child', zh:'小孩', cat:'people', emoji:'🧒', plural:'children', note:'one child - two children' },
 ```
 
-`cat` 可用的主題：`basics`、`animals`、`things`、`people`、`vehicles`、`numbers`、`body`
-（主題定義在同檔案的 `CATS` 物件中，可自行增減。）
+`cat` 可用的主題：
+- 姐姐（`CATS_JIE`）：`verbs`、`food`、`school`、`life`
+- 妹妹（`CATS_MEI`）：`basics`、`animals`、`things`、`people`、`vehicles`、`numbers`、`body`
 
-同一份單字也維護在兩個地方，方便其他程式讀取：
-- `words` — 純文字 `中文-英文` 格式（React 版 `WordLearningPage` 會讀這個檔）
-- `data/vocabulary.json` — 含主題、emoji、複數變化的完整結構
+要新增第三個人的話，在 `PROFILES` 加一筆就好，記得給一個沒用過的 `storeKey`：
+
+```js
+const PROFILES = {
+  jie: { key:'jie', name:'姐姐', emoji:'👩', color:'#3B82F6', sub:'…',
+         storeKey:'runku_jie_v1', words:WORDS_JIE, cats:CATS_JIE, showNo:true },
+  // …
+};
+```
+
+同一份單字也維護在其他地方，方便其他程式讀取：
+- `words` — 妹妹單字的純文字 `中文-英文` 格式（React 版 `WordLearningPage` 會讀這個檔）
+- `data/vocabulary.json` — 妹妹單字的完整結構（主題／emoji／複數）
+- `data/vocabulary-jie.json` — 姐姐單字的完整結構（含單字表編號）
 
 ## 📁 專案結構
 
 ```
 RUNKU/
 ├── index.html                 # 🎮 主程式（單檔遊戲樂園，GitHub Pages 首頁）
-├── words                      # 單字純文字檔（中文-英文）
+├── words                      # 妹妹單字純文字檔（中文-英文）
 ├── data/
-│   └── vocabulary.json        # 單字結構化資料（主題／emoji／複數）
+│   ├── vocabulary.json        # 妹妹單字結構化資料（主題／emoji／複數）
+│   └── vocabulary-jie.json    # 姐姐單字結構化資料（含單字表編號）
 ├── frontend/                  # React + Vite 版本（實驗中）
 │   └── src/
 │       ├── components/
