@@ -1,8 +1,74 @@
-# RUNKU 單字庫
-# 格式: 中文-英文 或 英文-中文
+# RUNKU 單字庫（20260729 U6~U10）
+# 格式: 中文-英文
 
+# --- 基礎用語 ---
+什麼-what
+這個-this
+那個-that
+這些-these
+那些-those
+花-flower
+
+# --- 動物 ---
+熊-bear
+鳥-bird
+老虎-tiger
+螞蟻-ant
+斑馬-zebra
 章魚-octopus
+馬-horse
+魚-fish
+獅子-lion
 狗-dog
 貓-cat
+蛇-snake
 鴨子-duck
-蜜蜂-bee
+猴子-monkey
+
+# --- 生活物品 ---
+老鼠-mouse
+雨傘-umbrella
+手錶-watch
+長板凳-bench
+窗戶-window
+門-door
+風箏-kite
+雲-cloud
+玩具-toy
+
+# --- 職業人物 ---
+護理師-nurse
+舞者-dancer
+醫生-doctor
+
+# --- 交通與樂器 ---
+小提琴-violin
+火車-train
+卡車-truck
+鋼琴-piano
+
+# --- 數字 1-10 ---
+一-one
+二-two
+三-three
+四-four
+五-five
+六-six
+七-seven
+八-eight
+九-nine
+十-ten
+
+# --- 身體部位 ---
+臉-face
+頭髮-hair
+眼睛-eye
+嘴巴-mouth
+手-hand
+耳朵-ear
+肚子-stomach
+肩膀-shoulder
+膝蓋-knee
+手臂-arm
+腳-foot
+腿-leg
