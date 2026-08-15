@@ -42,9 +42,11 @@ def desktop_flow(browser):
     errors = []
     page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
     page.on("pageerror", lambda error: errors.append(str(error)))
+    page.on("response", lambda response: errors.append(f"HTTP {response.status}: {response.url}") if response.status >= 400 else None)
 
     open_card_game(page)
-    assert "39" in page.locator(".cq-feature-row").inner_text()
+    intro_stats = page.locator(".cq-feature-row").inner_text()
+    assert "39" in intro_stats and "8" in intro_stats
     assert page.locator(".cq-intro-showcase img").count() == 4
     assert all(
         width > 0
@@ -58,10 +60,15 @@ def desktop_flow(browser):
     page.get_by_role("button", name="撕開星光卡包").wait_for()
     page.screenshot(path=OUTPUT / "booster-desktop.png", full_page=True)
     page.get_by_role("button", name="撕開星光卡包").click()
-    page.get_by_role("heading", name="選兩隻星獸組隊").wait_for()
-    assert page.locator(".cq-card-grid .cq-card").count() == 4
-    page.locator('.cq-card[data-beast="sparkit"]').click()
-    page.locator('.cq-card[data-beast="fernhorn"]').click()
+    page.get_by_role("heading", name="從八張卡選兩隻組隊").wait_for()
+    assert page.locator(".cq-card-grid .cq-card").count() == 8
+    assert page.locator(".cq-card-grid img").evaluate_all(
+        "images => images.every(image => image.naturalWidth > 0)"
+    )
+    card_text = page.locator(".cq-card-grid").inner_text()
+    assert "SKYHARE" in card_text and "ENGLISH STORY" in card_text
+    page.locator('.cq-card[data-beast="skyhare"]').click()
+    page.locator('.cq-card[data-beast="mosscub"]').click()
     assert page.locator(".cq-card-grid .is-selected").count() == 2
     page.screenshot(path=OUTPUT / "deck-builder-desktop.png", full_page=True)
 
@@ -118,13 +125,14 @@ def mobile_flow(browser):
     errors = []
     page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
     page.on("pageerror", lambda error: errors.append(str(error)))
+    page.on("response", lambda response: errors.append(f"HTTP {response.status}: {response.url}") if response.status >= 400 else None)
 
     open_card_game(page)
     assert_no_overflow(page)
     page.screenshot(path=OUTPUT / "intro-mobile.png", full_page=True)
     page.get_by_role("button", name="開啟星光卡包 ✦").click()
     page.get_by_role("button", name="撕開星光卡包").click()
-    page.get_by_role("heading", name="選兩隻星獸組隊").wait_for()
+    page.get_by_role("heading", name="從八張卡選兩隻組隊").wait_for()
     page.wait_for_timeout(1100)
     assert_no_overflow(page)
     page.screenshot(path=OUTPUT / "deck-builder-mobile.png", full_page=True)

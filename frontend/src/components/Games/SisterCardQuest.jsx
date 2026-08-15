@@ -3,6 +3,10 @@ import sparkitArt from '../../assets/creatures/sparkit.webp';
 import fernhornArt from '../../assets/creatures/fernhorn.webp';
 import tidekipArt from '../../assets/creatures/tidekip.webp';
 import cinderwingArt from '../../assets/creatures/cinderwing.webp';
+import skyhareArt from '../../assets/creatures/skyhare.webp';
+import mosscubArt from '../../assets/creatures/mosscub.webp';
+import pearlrayArt from '../../assets/creatures/pearlray.webp';
+import lavahootArt from '../../assets/creatures/lavahoot.webp';
 import './SisterCardQuest.css';
 
 const BEASTS = [
@@ -12,6 +16,7 @@ const BEASTS = [
     en: 'SPARKIT',
     element: 'spark',
     type: '雷光系',
+    elementEn: 'ELECTRIC',
     symbol: 'ϟ',
     art: sparkitArt,
     hp: 8,
@@ -19,6 +24,7 @@ const BEASTS = [
     skill: 'THUNDER WORD',
     skillZh: '雷光單字閃',
     flavor: '牠會把剛學會的單字存進閃電尾巴。',
+    flavorEn: 'New words shine inside its lightning tail.',
   },
   {
     id: 'fernhorn',
@@ -26,6 +32,7 @@ const BEASTS = [
     en: 'FERNHORN',
     element: 'forest',
     type: '森芽系',
+    elementEn: 'FOREST',
     symbol: '❧',
     art: fernhornArt,
     hp: 9,
@@ -33,6 +40,7 @@ const BEASTS = [
     skill: 'LEAF LEXICON',
     skillZh: '森羅字典葉',
     flavor: '每記住一個意思，鹿角就會長出新芽。',
+    flavorEn: 'Every meaning it remembers grows a fresh leaf.',
   },
   {
     id: 'tidekip',
@@ -40,6 +48,7 @@ const BEASTS = [
     en: 'TIDEKIP',
     element: 'tide',
     type: '潮汐系',
+    elementEn: 'TIDE',
     symbol: '≋',
     art: tidekipArt,
     hp: 10,
@@ -47,6 +56,7 @@ const BEASTS = [
     skill: 'TIDAL TALK',
     skillZh: '潮聲連連看',
     flavor: '牠能從水波中聽見最清楚的英文發音。',
+    flavorEn: 'It hears clear English inside every ripple.',
   },
   {
     id: 'cinderwing',
@@ -54,6 +64,7 @@ const BEASTS = [
     en: 'CINDERWING',
     element: 'ember',
     type: '焰羽系',
+    elementEn: 'EMBER',
     symbol: '✦',
     art: cinderwingArt,
     hp: 8,
@@ -61,6 +72,71 @@ const BEASTS = [
     skill: 'BLAZE SPELL',
     skillZh: '熾焰拼字術',
     flavor: '正確拼出單字時，翅膀會綻放成火花。',
+    flavorEn: 'Correct spelling makes its small wings glow.',
+  },
+  {
+    id: 'skyhare',
+    name: '霆耳',
+    en: 'SKYHARE',
+    element: 'spark',
+    type: '雷光系',
+    elementEn: 'ELECTRIC',
+    symbol: 'ϟ',
+    art: skyhareArt,
+    hp: 9,
+    power: 69,
+    skill: 'QUICK RESPONSE',
+    skillZh: '霆空快答',
+    flavor: '長耳能接住遠方傳來的每一個英文音節。',
+    flavorEn: 'Its cloud ears catch every English sound.',
+  },
+  {
+    id: 'mosscub',
+    name: '苔甲',
+    en: 'MOSSCUB',
+    element: 'forest',
+    type: '森芽系',
+    elementEn: 'FOREST',
+    symbol: '❧',
+    art: mosscubArt,
+    hp: 11,
+    power: 58,
+    skill: 'ROOT ARMOR',
+    skillZh: '苔甲守護',
+    flavor: '慢慢讀懂句子，苔甲就會變得更堅固。',
+    flavorEn: 'Reading each sentence makes its armor strong.',
+  },
+  {
+    id: 'pearlray',
+    name: '珠翼',
+    en: 'PEARLRAY',
+    element: 'tide',
+    type: '潮汐系',
+    elementEn: 'TIDE',
+    symbol: '≋',
+    art: pearlrayArt,
+    hp: 9,
+    power: 70,
+    skill: 'SPLASH PHRASE',
+    skillZh: '珠浪片語',
+    flavor: '牠把新片語串成閃亮的珍珠水環。',
+    flavorEn: 'New phrases become a bright ring of pearls.',
+  },
+  {
+    id: 'lavahoot',
+    name: '熔梟',
+    en: 'LAVAHOOT',
+    element: 'ember',
+    type: '焰羽系',
+    elementEn: 'EMBER',
+    symbol: '✦',
+    art: lavahootArt,
+    hp: 8,
+    power: 80,
+    skill: 'EMBER ECHO',
+    skillZh: '熔火回音',
+    flavor: '勇敢念出英文，熔梟就會回應一圈火光。',
+    flavorEn: 'Speak with courage and its embers answer.',
   },
 ];
 
@@ -130,12 +206,12 @@ function CreatureCard({ beast, selected = false, compact = false, faceDown = fal
         <div className="cq-card-back"><span>✦</span><b>LEXIBEAST</b><small>WORD CARD</small></div>
       ) : (
         <>
-          <div className="cq-card-top"><span>{beast.type}</span><b>{beast.en}</b><i>{beast.symbol}</i></div>
+          <div className="cq-card-top"><span>NO. {String(BEASTS.findIndex((item) => item.id === beast.id) + 1).padStart(3, '0')}</span><b>{beast.elementEn}</b><i>{beast.symbol}</i></div>
           <div className="cq-card-art"><img src={beast.art} alt={`${beast.name} ${beast.en}`} /><span>AI ORIGINAL ART</span></div>
-          <div className="cq-card-name"><div><small>NO. 0{BEASTS.findIndex((item) => item.id === beast.id) + 1}</small><h3>{beast.name}</h3></div><b>HP {beast.hp}</b></div>
-          <div className="cq-card-skill"><span>{beast.symbol}</span><div><b>{beast.skill}</b><small>{beast.skillZh}</small></div><strong>{beast.power}</strong></div>
-          {!compact && <p>{beast.flavor}</p>}
-          <footer><span>WORD CORE</span><i>{beast.symbol} {ELEMENT_LABEL[beast.element]}</i></footer>
+          <div className="cq-card-name"><div><small>{beast.name} · {beast.type}</small><h3>{beast.en}</h3></div><b><small>HP</small>{beast.hp}</b></div>
+          <div className="cq-card-skill"><span>{beast.symbol}</span><div><em>ENGLISH SKILL</em><b>{beast.skill}</b><small>{beast.skillZh}</small></div><strong>{beast.power}</strong></div>
+          {!compact && <div className="cq-card-flavor"><b>ENGLISH STORY</b><p>{beast.flavorEn}</p><small>{beast.flavor}</small></div>}
+          <footer><span>ENGLISH WORD CARD</span><i>{beast.symbol} {ELEMENT_LABEL[beast.element]}</i></footer>
           {selected && <div className="cq-selected-stamp">IN DECK<small>已加入牌組</small></div>}
         </>
       )}
@@ -155,7 +231,7 @@ function Intro({ records, wordCount, onStart }) {
           <p><b>星獸研究員的委託</b>正確的英文單字會變成能量！打開卡包、組成兩張星獸牌，運用屬性相剋贏得對戰。</p>
         </div>
         <div className="cq-feature-row">
-          <span><b>4</b><small>原創星獸</small></span>
+          <span><b>{BEASTS.length}</b><small>原創星獸</small></span>
           <span><b>{wordCount}</b><small>姊姊單字</small></span>
           <span><b>{records.wins}</b><small>競技場勝場</small></span>
         </div>
@@ -163,9 +239,9 @@ function Intro({ records, wordCount, onStart }) {
         <p className="cq-safe-note">原創角色與世界觀・沒有付費抽卡・可以無限重玩</p>
       </section>
 
-      <section className="cq-intro-showcase" aria-label="四張原創星獸卡">
+      <section className="cq-intro-showcase" aria-label="八張卡牌中的四張新星獸卡">
         <div className="cq-holo-orbit" />
-        {BEASTS.map((beast, index) => <div className={`cq-fan cq-fan-${index + 1}`} key={beast.id}><CreatureCard beast={beast} compact /></div>)}
+        {BEASTS.slice(-4).map((beast, index) => <div className={`cq-fan cq-fan-${index + 1}`} key={beast.id}><CreatureCard beast={beast} compact /></div>)}
         <div className="cq-arena-mark"><span>LEXI</span><b>★</b><span>BEAST</span></div>
       </section>
     </div>
@@ -181,13 +257,13 @@ function PackBuilder({ opened, selected, onOpen, onSelect, onBattle, onBack }) {
           <p className="cq-eyebrow">NEW BOOSTER · CARD PACK</p>
           <h2>今天會遇見<br />哪一隻星獸？</h2>
           <button className="cq-booster" onClick={onOpen} aria-label="撕開星光卡包">
-            <i /><i /><div><span>✦</span><b>LEXIBEAST</b><small>FIRST LIGHT PACK</small><em>4 ORIGINAL CREATURE CARDS</em></div>
+            <i /><i /><div><span>✦</span><b>LEXIBEAST</b><small>FIRST LIGHT PACK</small><em>{BEASTS.length} ORIGINAL CREATURE CARDS</em></div>
           </button>
           <p>點一下卡包，撕開封印！</p>
         </main>
       ) : (
         <main className="cq-deck-builder">
-          <div className="cq-builder-heading"><div><p className="cq-eyebrow">PACK OPENED!</p><h2>選兩隻星獸組隊</h2><p>注意屬性相剋：雷 → 潮 → 焰 → 森 → 雷</p></div><div className="cq-deck-slots"><span className={selected[0] ? 'has-card' : ''}>{selected[0] ? BEASTS.find((item) => item.id === selected[0]).symbol : '1'}</span><i>+</i><span className={selected[1] ? 'has-card' : ''}>{selected[1] ? BEASTS.find((item) => item.id === selected[1]).symbol : '2'}</span></div></div>
+          <div className="cq-builder-heading"><div><p className="cq-eyebrow">{BEASTS.length} CARDS DISCOVERED!</p><h2>從八張卡選兩隻組隊</h2><p>Read the English name and skill · 雷 → 潮 → 焰 → 森 → 雷</p></div><div className="cq-deck-slots"><span className={selected[0] ? 'has-card' : ''}>{selected[0] ? BEASTS.find((item) => item.id === selected[0]).symbol : '1'}</span><i>+</i><span className={selected[1] ? 'has-card' : ''}>{selected[1] ? BEASTS.find((item) => item.id === selected[1]).symbol : '2'}</span></div></div>
           <div className="cq-card-grid">
             {BEASTS.map((beast, index) => (
               <div className="cq-reveal" style={{ '--reveal-delay': `${index * 120}ms` }} key={beast.id}>
