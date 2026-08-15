@@ -4,6 +4,7 @@ import MemoryMatch from '../components/Games/MemoryMatch';
 import SpellingChallenge from '../components/Games/SpellingChallenge';
 import BodyAdventure from '../components/Games/BodyAdventure';
 import SisterAdventure from '../components/Games/SisterAdventure';
+import SisterCardQuest from '../components/Games/SisterCardQuest';
 import { useProfile } from '../context/ProfileContext';
 
 export default function GamesPage() {
@@ -25,6 +26,7 @@ export default function GamesPage() {
       component: SisterAdventure,
       color: 'from-slate-700 to-teal-800',
       featured: true,
+      action: '展開地圖',
     } : {
       id: 'body-adventure',
       name: '妹妹勇者傳說',
@@ -34,7 +36,19 @@ export default function GamesPage() {
       component: BodyAdventure,
       color: 'from-emerald-600 to-teal-800',
       featured: true,
+      action: '展開地圖',
     },
+    ...(profile.key === 'jie' ? [{
+      id: 'sister-card-quest',
+      name: '星獸單字卡牌戰',
+      englishName: 'LEXIBEAST · WORD CARD ARENA',
+      icon: '✦',
+      description: '開啟原創星獸卡包，組成兩張牌，用姊姊的專屬單字發動屬性攻擊。',
+      component: SisterCardQuest,
+      color: 'from-cyan-700 via-slate-800 to-amber-600',
+      featured: true,
+      action: '開啟卡包',
+    }] : []),
     {
       id: 'whackamole',
       name: '單字打地鼠',
@@ -93,7 +107,7 @@ export default function GamesPage() {
                   <p className="text-white text-opacity-90 mb-4">{game.description}</p>
                 </div>
                 <div className={`flex items-center gap-2 text-white font-semibold ${game.featured ? 'justify-start md:justify-center md:px-6 md:py-3 md:border-2 md:border-white md:rounded-full md:flex-none' : 'justify-center'}`}>
-                  {game.featured ? '展開地圖' : '開始遊戲'}
+                  {game.action || (game.featured ? '展開地圖' : '開始遊戲')}
                   <span className="transform transition-transform group-hover:translate-x-2">→</span>
                 </div>
               </div>
@@ -130,14 +144,14 @@ export default function GamesPage() {
     );
   }
 
-  if (selectedGame.id === 'body-adventure' || selectedGame.id === 'sister-adventure') {
+  if (['body-adventure', 'sister-adventure', 'sister-card-quest'].includes(selectedGame.id)) {
     return (
       <div className="space-y-4">
         <button
           onClick={() => setSelectedGame(null)}
           className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors font-semibold"
         >
-          <span>←</span><span>離開冒險，返回遊戲選單</span>
+          <span>←</span><span>離開遊戲，返回遊戲選單</span>
         </button>
         <GameComponent words={words} />
       </div>
