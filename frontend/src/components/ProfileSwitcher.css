@@ -1,0 +1,71 @@
+.profile-gate {
+  --gate-ink: #173c3a;
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+  padding: 60px 24px 80px;
+  color: var(--gate-ink);
+  background:
+    radial-gradient(circle at 50% 5%, rgba(255, 246, 190, .92), transparent 28%),
+    radial-gradient(circle at 8% 84%, rgba(126, 194, 181, .43), transparent 31%),
+    #f4edda;
+  font-family: "Trebuchet MS", "Microsoft JhengHei", sans-serif;
+}
+
+.profile-gate::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: .17;
+  background-image: radial-gradient(#315d58 1px, transparent 1px);
+  background-size: 19px 19px;
+  mask-image: linear-gradient(to bottom, #000, transparent 70%);
+}
+
+.profile-gate-stars { position: absolute; top: 8%; left: 4%; right: 4%; color: #d29d35; font: 900 27px Georgia, serif; letter-spacing: 12vw; white-space: nowrap; opacity: .55; }
+.profile-gate > header { position: relative; z-index: 1; max-width: 760px; margin: 0 auto 42px; text-align: center; }
+.profile-gate-logo { display: grid; place-items: center; width: 55px; height: 55px; margin: 0 auto 11px; border-radius: 50%; background: var(--gate-ink); color: #fff3c4; font: 900 27px Georgia, serif; transform: rotate(-7deg); box-shadow: 5px 6px 0 rgba(23,60,58,.16); }
+.profile-gate header p { margin: 0 0 12px; color: #b05a49; font: 900 11px Georgia, serif; letter-spacing: .19em; }
+.profile-gate h1 { margin: 0; font: 900 clamp(42px, 6vw, 67px)/.98 Georgia, "Microsoft JhengHei", serif; letter-spacing: -.05em; }
+.profile-gate h1 em { color: #e66150; font-style: normal; }
+.profile-gate header > span:last-child { display: block; margin-top: 19px; color: #52706c; font-size: 14px; font-weight: 800; }
+.profile-gate-grid { position: relative; z-index: 2; width: min(900px, 100%); display: grid; grid-template-columns: repeat(2, 1fr); gap: 25px; margin: auto; }
+.profile-gate-card { min-height: 390px; position: relative; overflow: hidden; padding: 28px; border: 3px solid var(--gate-ink); border-radius: 25px 25px 14px 14px; background: var(--profile-pale); color: var(--gate-ink); text-align: left; cursor: pointer; box-shadow: 9px 11px 0 rgba(23,60,58,.16); transition: transform .22s, box-shadow .22s; }
+.profile-gate-card::before { content: ""; position: absolute; width: 270px; height: 270px; right: -75px; top: -75px; border-radius: 50%; background: color-mix(in srgb, var(--profile-accent) 18%, white); }
+.profile-gate-card:hover { transform: translateY(-9px) rotate(-.7deg); box-shadow: 14px 18px 0 rgba(23,60,58,.13); }
+.profile-gate-card--mei:hover { transform: translateY(-9px) rotate(.7deg); }
+.profile-card-number { position: absolute; top: 21px; left: 23px; color: var(--profile-accent); font: 900 12px Georgia, serif; }
+.profile-card-art { height: 185px; display: flex; justify-content: flex-end; position: relative; z-index: 1; }
+.profile-card-art img { width: 67%; height: 100%; object-fit: contain; filter: drop-shadow(7px 10px 4px rgba(34,64,56,.2)); }
+.profile-gate-card > small { color: var(--profile-accent); font: 900 10px Georgia, serif; letter-spacing: .15em; }
+.profile-gate-card h2 { margin: 5px 0; font: 900 34px Georgia, "Microsoft JhengHei", serif; }
+.profile-gate-card p { margin: 0; color: #58716e; font-size: 13px; font-weight: 800; }
+.profile-card-meta { display: flex; justify-content: space-between; align-items: end; margin-top: 25px; padding-top: 17px; border-top: 2px solid color-mix(in srgb, var(--profile-accent) 30%, transparent); }
+.profile-card-meta b { color: var(--profile-accent); font: 900 30px Georgia, serif; }
+.profile-card-meta b span { font-size: 8px; letter-spacing: .12em; }
+.profile-card-meta i { padding: 11px 13px; border-radius: 9px; background: var(--gate-ink); color: white; font-size: 12px; font-style: normal; font-weight: 900; }
+
+.profile-menu { position: relative; }
+.profile-menu-trigger { display: flex; align-items: center; gap: 7px; padding: 7px 11px; border: 2px solid #dce6e4; border-radius: 999px; background: #f5faf9; color: #244944; cursor: pointer; }
+.profile-menu-trigger > span { font-size: 20px; }
+.profile-menu-trigger b { font-size: 13px; }
+.profile-menu-trigger i { color: #66827e; font-size: 13px; font-style: normal; }
+.profile-menu-popover { width: 240px; position: absolute; z-index: 300; right: 0; top: calc(100% + 10px); padding: 11px; border: 2px solid #254b46; border-radius: 14px; background: #fffdf4; box-shadow: 7px 9px 0 rgba(26,65,60,.17), 0 18px 45px rgba(25,58,53,.18); }
+.profile-menu-popover > small { display: block; padding: 5px 7px 9px; color: #718681; font-size: 10px; font-weight: 900; letter-spacing: .1em; }
+.profile-menu-popover > button:not(.profile-menu-exit) { width: 100%; display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 7px; padding: 10px; border: 0; border-radius: 9px; background: transparent; color: #254b46; text-align: left; cursor: pointer; }
+.profile-menu-popover > button:hover, .profile-menu-popover > button.is-active { background: #edf4e8; }
+.profile-menu-popover button > span { font-size: 23px; }
+.profile-menu-popover button div b, .profile-menu-popover button div small { display: block; }
+.profile-menu-popover button div b { font-size: 13px; }
+.profile-menu-popover button div small { color: #718681; font-size: 10px; }
+.profile-menu-popover button > i { font-style: normal; font-weight: 900; }
+.profile-menu-exit { width: 100%; margin-top: 7px; padding: 8px; border: 0; border-top: 1px solid #d8e2df; background: transparent; color: #8a625b; font-size: 11px; cursor: pointer; }
+
+@media (max-width: 680px) {
+  .profile-gate { padding: 38px 16px 60px; }
+  .profile-gate-grid { grid-template-columns: 1fr; }
+  .profile-gate-card { min-height: 330px; }
+  .profile-card-art { height: 135px; }
+  .profile-card-art img { width: 58%; }
+  .profile-gate h1 { font-size: 42px; }
+}

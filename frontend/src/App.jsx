@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import './index.css';
+import { ProfileProvider, useProfile } from './context/ProfileContext';
+import { ProfileGate, ProfileMenu } from './components/ProfileSwitcher';
 
 // Pages
 import HomePage from './pages/HomePage';
@@ -34,17 +36,21 @@ function Navigation() {
             <NavLink to="/word-learning">單字學習</NavLink>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2"
-          >
-            <div className="w-6 h-5 flex flex-col justify-between">
-              <span className={`block h-0.5 w-full bg-gray-600 transition-all ${isOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
-              <span className={`block h-0.5 w-full bg-gray-600 transition-all ${isOpen ? 'opacity-0' : ''}`}></span>
-              <span className={`block h-0.5 w-full bg-gray-600 transition-all ${isOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
-            </div>
-          </button>
+          <div className="flex items-center gap-3">
+            <ProfileMenu />
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="md:hidden p-2"
+              aria-label="開啟導覽選單"
+            >
+              <div className="w-6 h-5 flex flex-col justify-between">
+                <span className={`block h-0.5 w-full bg-gray-600 transition-all ${isOpen ? 'rotate-45 translate-y-2' : ''}`}></span>
+                <span className={`block h-0.5 w-full bg-gray-600 transition-all ${isOpen ? 'opacity-0' : ''}`}></span>
+                <span className={`block h-0.5 w-full bg-gray-600 transition-all ${isOpen ? '-rotate-45 -translate-y-2' : ''}`}></span>
+              </div>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -88,22 +94,34 @@ function MobileNavLink({ to, children, onClick }) {
   );
 }
 
+function AppShell() {
+  const { profile } = useProfile();
+
+  if (!profile) return <ProfileGate />;
+
+  return (
+    <div className="min-h-screen bg-gray-50" style={{ '--profile-color': profile.accent }}>
+      <Navigation />
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/study" element={<StudyPage />} />
+          <Route path="/speaking" element={<SpeakingPage />} />
+          <Route path="/games" element={<GamesPage />} />
+          <Route path="/stats" element={<StatsPage />} />
+          <Route path="/word-learning" element={<WordLearningPage />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
+
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <main className="max-w-7xl mx-auto px-4 py-8">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/study" element={<StudyPage />} />
-            <Route path="/speaking" element={<SpeakingPage />} />
-            <Route path="/games" element={<GamesPage />} />
-            <Route path="/stats" element={<StatsPage />} />
-            <Route path="/word-learning" element={<WordLearningPage />} />
-          </Routes>
-        </main>
-      </div>
+      <ProfileProvider>
+        <AppShell />
+      </ProfileProvider>
     </Router>
   );
 }

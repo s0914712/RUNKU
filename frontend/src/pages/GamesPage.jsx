@@ -2,27 +2,39 @@ import { useState, useEffect } from 'react';
 import Whackamole from '../components/Games/Whackamole';
 import MemoryMatch from '../components/Games/MemoryMatch';
 import SpellingChallenge from '../components/Games/SpellingChallenge';
+import BodyAdventure from '../components/Games/BodyAdventure';
+import SisterAdventure from '../components/Games/SisterAdventure';
+import { useProfile } from '../context/ProfileContext';
 
 export default function GamesPage() {
-  const [words, setWords] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { profile } = useProfile();
+  const words = profile.words;
   const [selectedGame, setSelectedGame] = useState(null);
 
-  // 載入單字
   useEffect(() => {
-    fetch('https://raw.githubusercontent.com/s0914712/RUNKU/main/data/vocabulary.json')
-      .then(res => res.json())
-      .then(data => {
-        setWords(data.words || []);
-        setIsLoading(false);
-      })
-      .catch(err => {
-        console.error('Failed to load vocabulary:', err);
-        setIsLoading(false);
-      });
-  }, []);
+    setSelectedGame(null);
+  }, [profile.key]);
 
   const games = [
+    profile.key === 'jie' ? {
+      id: 'sister-adventure',
+      name: '姊姊勇者傳說',
+      englishName: 'THE AZURE WORD CHRONICLE',
+      icon: '⚔️',
+      description: '化身蒼藍勇者，以單字斬、聽音術和拼字魔法闖過四座城鎮，討伐三首闇語龍。',
+      component: SisterAdventure,
+      color: 'from-slate-700 to-teal-800',
+      featured: true,
+    } : {
+      id: 'body-adventure',
+      name: '妹妹勇者傳說',
+      englishName: 'THE SUNBEAM WORD CHRONICLE',
+      icon: '🛡️',
+      description: '成為曙光勇者，認出動物、物品、數字與身體單字，在彩虹王國展開回合制冒險。',
+      component: BodyAdventure,
+      color: 'from-emerald-600 to-teal-800',
+      featured: true,
+    },
     {
       id: 'whackamole',
       name: '單字打地鼠',
@@ -54,36 +66,14 @@ export default function GamesPage() {
     // 可以在這裡記錄遊戲成績
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[500px]">
-        <div className="text-center">
-          <div className="text-6xl mb-4 animate-bounce">🎮</div>
-          <div className="text-xl text-gray-600">載入中...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (words.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-[500px]">
-        <div className="text-center">
-          <div className="text-6xl mb-4">😢</div>
-          <h2 className="text-2xl font-bold mb-2">找不到單字庫</h2>
-        </div>
-      </div>
-    );
-  }
-
   // 遊戲選單
   if (!selectedGame) {
     return (
       <div className="space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold mb-4">趣味小遊戲</h1>
+          <h1 className="text-4xl font-bold mb-4">{profile.emoji} {profile.name}的趣味小遊戲</h1>
           <p className="text-xl text-gray-600">
-            透過遊戲輕鬆學習，寓教於樂 🎯
+            目前使用 {profile.words.length} 個專屬單字・透過遊戲輕鬆學習 🎯
           </p>
         </div>
 
@@ -92,16 +82,18 @@ export default function GamesPage() {
             <button
               key={game.id}
               onClick={() => setSelectedGame(game)}
-              className="group block"
+              className={`group block text-left ${game.featured ? 'md:col-span-3' : ''}`}
             >
-              <div className={`h-full bg-gradient-to-br ${game.color} rounded-2xl p-8 text-white transform transition-all hover:scale-105 hover:shadow-2xl`}>
-                <div className="text-7xl mb-4">{game.icon}</div>
-                <h3 className="text-2xl font-bold mb-3">{game.name}</h3>
-                <p className="text-white text-opacity-90 mb-4">
-                  {game.description}
-                </p>
-                <div className="flex items-center justify-center gap-2 text-white font-semibold">
-                  開始遊戲
+              <div className={`h-full bg-gradient-to-br ${game.color} rounded-2xl p-8 text-white transform transition-all hover:-translate-y-1 hover:shadow-2xl ${game.featured ? 'md:flex md:items-center md:gap-8 overflow-hidden relative' : 'text-center'}`}>
+                {game.featured && <div className="absolute -right-8 -top-16 text-[170px] opacity-10 rotate-12">✦</div>}
+                <div className={`${game.featured ? 'text-8xl md:mb-0' : 'text-7xl mb-4'}`}>{game.icon}</div>
+                <div className={game.featured ? 'flex-1' : ''}>
+                  {game.englishName && <div className="text-xs font-black tracking-[0.22em] text-yellow-200 mb-2">{game.englishName}</div>}
+                  <h3 className={`${game.featured ? 'text-3xl' : 'text-2xl'} font-bold mb-3`}>{game.name}</h3>
+                  <p className="text-white text-opacity-90 mb-4">{game.description}</p>
+                </div>
+                <div className={`flex items-center gap-2 text-white font-semibold ${game.featured ? 'justify-start md:justify-center md:px-6 md:py-3 md:border-2 md:border-white md:rounded-full md:flex-none' : 'justify-center'}`}>
+                  {game.featured ? '展開地圖' : '開始遊戲'}
                   <span className="transform transition-transform group-hover:translate-x-2">→</span>
                 </div>
               </div>
@@ -125,6 +117,32 @@ export default function GamesPage() {
 
   // 遊戲畫面
   const GameComponent = selectedGame.component;
+
+  if (words.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-[500px]">
+        <div className="text-center">
+          <div className="text-6xl mb-4">😢</div>
+          <h2 className="text-2xl font-bold mb-2">找不到單字庫</h2>
+          <button onClick={() => setSelectedGame(null)} className="mt-5 text-primary font-semibold">返回遊戲選單</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (selectedGame.id === 'body-adventure' || selectedGame.id === 'sister-adventure') {
+    return (
+      <div className="space-y-4">
+        <button
+          onClick={() => setSelectedGame(null)}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors font-semibold"
+        >
+          <span>←</span><span>離開冒險，返回遊戲選單</span>
+        </button>
+        <GameComponent words={words} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

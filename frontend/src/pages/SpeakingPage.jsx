@@ -1,30 +1,21 @@
 import { useState, useEffect } from 'react';
 import SpeakingPractice from '../components/SpeakingPractice';
 import { useLearningRecords, useDailyStats } from '../hooks/useLocalStorage';
+import { useProfile } from '../context/ProfileContext';
 
 export default function SpeakingPage() {
+  const { profile } = useProfile();
   const [words, setWords] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
   const [score, setScore] = useState(0);
-  const [learningRecords] = useLearningRecords();
-  const [, updateTodayStats] = useDailyStats();
+  const [learningRecords] = useLearningRecords(profile.key);
+  const [, updateTodayStats] = useDailyStats(profile.key);
 
-  // 載入單字
   useEffect(() => {
-    fetch('https://raw.githubusercontent.com/s0914712/RUNKU/main/data/vocabulary.json')
-      .then(res => res.json())
-      .then(data => {
-        // 隨機排序
-        const shuffled = (data.words || []).sort(() => Math.random() - 0.5);
-        setWords(shuffled);
-        setIsLoading(false);
-      })
-      .catch(err => {
-        console.error('Failed to load vocabulary:', err);
-        setIsLoading(false);
-      });
-  }, []);
+    setWords([...profile.words].sort(() => Math.random() - 0.5));
+    setCurrentIndex(0);
+    setScore(0);
+  }, [profile.key, profile.words]);
 
   const currentWord = words[currentIndex];
 
@@ -45,17 +36,6 @@ export default function SpeakingPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[500px]">
-        <div className="text-center">
-          <div className="text-6xl mb-4 animate-bounce">🎤</div>
-          <div className="text-xl text-gray-600">載入中...</div>
-        </div>
-      </div>
-    );
-  }
-
   if (words.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[500px]">
@@ -71,7 +51,8 @@ export default function SpeakingPage() {
     <div className="space-y-8">
       {/* 標題和統計 */}
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">語音練習</h1>
+        <h1 className="text-4xl font-bold mb-1">{profile.emoji} {profile.name}的語音練習</h1>
+        <p className="text-gray-500 mb-5">從 {profile.words.length} 個專屬單字中隨機練習</p>
         <div className="flex justify-center gap-8 mb-6">
           <div className="text-center">
             <div className="text-3xl font-bold text-primary">{currentIndex + 1}</div>

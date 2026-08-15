@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { useLearningRecords } from '../hooks/useLocalStorage';
 import { getStudyStats } from '../utils/spacedRepetition';
+import { useProfile } from '../context/ProfileContext';
 
 export default function HomePage() {
-  const [learningRecords] = useLearningRecords();
+  const { profile } = useProfile();
+  const [learningRecords] = useLearningRecords(profile.key);
   const stats = getStudyStats(learningRecords);
 
   const features = [
@@ -49,15 +51,15 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="text-center py-12">
         <h1 className="text-5xl md:text-6xl font-bold text-gray-800 mb-4">
-          歡迎來到 <span className="text-primary">RUNKU</span>
+          {profile.emoji} {profile.name}的 <span className="text-primary">RUNKU</span>
         </h1>
         <p className="text-xl text-gray-600 mb-8">
-          你的智慧語言學習夥伴 🚀
+          {profile.description}・共 {profile.words.length} 個單字
         </p>
         
         {/* 快速統計 */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto mb-8">
-          <StatCard label="總單字" value={stats.total} />
+          <StatCard label="總單字" value={profile.words.length} />
           <StatCard label="學習中" value={stats.learning} />
           <StatCard label="複習中" value={stats.review} />
           <StatCard label="已精通" value={stats.mastered} />
