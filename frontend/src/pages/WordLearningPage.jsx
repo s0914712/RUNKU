@@ -1,21 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-
-const WORDS_URL = 'https://raw.githubusercontent.com/s0914712/RUNKU/main/words';
-
-function parseWords(text) {
-  return text
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line && !line.startsWith('#') && line.includes('-'))
-    .map(line => {
-      const idx = line.indexOf('-');
-      return {
-        chinese: line.substring(0, idx).trim(),
-        english: line.substring(idx + 1).trim(),
-      };
-    })
-    .filter(w => w.chinese && w.english);
-}
+import { useProfile } from '../context/ProfileContext';
 
 function speak(text, lang = 'en-US') {
   if (!window.speechSynthesis) return;
@@ -27,57 +11,15 @@ function speak(text, lang = 'en-US') {
 }
 
 export default function WordLearningPage() {
-  const [words, setWords] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { profile } = useProfile();
+  const words = profile.words;
   const [mode, setMode] = useState('cards'); // 'cards' | 'quiz'
-
-  useEffect(() => {
-    fetch(WORDS_URL)
-      .then(res => {
-        if (!res.ok) throw new Error('無法載入單字檔案');
-        return res.text();
-      })
-      .then(text => {
-        const parsed = parseWords(text);
-        if (parsed.length === 0) throw new Error('單字檔案內容為空');
-        setWords(parsed);
-        setIsLoading(false);
-      })
-      .catch(err => {
-        setError(err.message);
-        setIsLoading(false);
-      });
-  }, []);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[500px]">
-        <div className="text-center">
-          <div className="text-6xl mb-4 animate-bounce">🐾</div>
-          <div className="text-xl text-gray-600">載入單字中...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-[500px]">
-        <div className="text-center">
-          <div className="text-6xl mb-4">😢</div>
-          <h2 className="text-2xl font-bold mb-2">載入失敗</h2>
-          <p className="text-gray-600">{error}</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-2">單字學習</h1>
-        <p className="text-gray-600 mb-6">共 {words.length} 個單字</p>
+        <h1 className="text-4xl font-bold mb-2">{profile.emoji} {profile.name}的單字學習</h1>
+        <p className="text-gray-600 mb-6">{profile.description}・共 {words.length} 個單字</p>
 
         {/* Mode Tabs */}
         <div className="flex justify-center gap-4 mb-6">
@@ -105,9 +47,9 @@ export default function WordLearningPage() {
       </div>
 
       {mode === 'cards' ? (
-        <CardMode words={words} />
+        <CardMode key={profile.key} words={words} />
       ) : (
-        <QuizMode words={words} />
+        <QuizMode key={profile.key} words={words} />
       )}
     </div>
   );

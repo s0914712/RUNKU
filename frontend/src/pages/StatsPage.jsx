@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useLearningRecords, useDailyStats, exportLearningData, importLearningData } from '../hooks/useLocalStorage';
 import { getStudyStats } from '../utils/spacedRepetition';
+import { useProfile } from '../context/ProfileContext';
 
 export default function StatsPage() {
-  const [learningRecords, setLearningRecords] = useLearningRecords();
-  const [dailyStats] = useDailyStats();
+  const { profile } = useProfile();
+  const [learningRecords, setLearningRecords] = useLearningRecords(profile.key);
+  const [dailyStats] = useDailyStats(profile.key);
   const [showImport, setShowImport] = useState(false);
   const stats = getStudyStats(learningRecords);
 
@@ -32,8 +34,9 @@ export default function StatsPage() {
 
   // 清除所有資料
   const handleClearData = () => {
-    if (window.confirm('確定要清除所有學習記錄嗎？此操作無法復原！')) {
-      localStorage.clear();
+    if (window.confirm(`確定要清除${profile.name}的學習記錄嗎？不會影響另一個人。`)) {
+      localStorage.removeItem(`learning_records_${profile.key}`);
+      localStorage.removeItem(`daily_stats_${profile.key}`);
       window.location.reload();
     }
   };
@@ -42,7 +45,7 @@ export default function StatsPage() {
   const handleImport = (e) => {
     const file = e.target.files[0];
     if (file) {
-      importLearningData(file, (success, message) => {
+      importLearningData(file, profile.key, (success, message) => {
         alert(message);
         if (success) {
           window.location.reload();
@@ -54,15 +57,15 @@ export default function StatsPage() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">學習統計</h1>
-        <p className="text-xl text-gray-600">追蹤你的學習進度 📊</p>
+        <h1 className="text-4xl font-bold mb-4">{profile.emoji} {profile.name}的學習統計</h1>
+        <p className="text-xl text-gray-600">兩個人的紀錄分開保存 📊</p>
       </div>
 
       {/* 總覽統計 */}
       <div className="grid md:grid-cols-4 gap-6">
         <StatCard
           title="總單字數"
-          value={stats.total}
+          value={profile.words.length}
           icon="📚"
           color="bg-blue-500"
         />
@@ -137,25 +140,25 @@ export default function StatsPage() {
           <ProgressBar
             label="已精通"
             value={stats.mastered}
-            total={stats.total}
+            total={profile.words.length}
             color="bg-green-500"
           />
           <ProgressBar
             label="複習中"
             value={stats.review}
-            total={stats.total}
+            total={profile.words.length}
             color="bg-yellow-500"
           />
           <ProgressBar
             label="學習中"
             value={stats.learning}
-            total={stats.total}
+            total={profile.words.length}
             color="bg-orange-500"
           />
           <ProgressBar
             label="未學習"
-            value={stats.total - stats.learning - stats.review - stats.mastered}
-            total={stats.total}
+            value={Math.max(0, profile.words.length - stats.learning - stats.review - stats.mastered)}
+            total={profile.words.length}
             color="bg-gray-300"
           />
         </div>
@@ -171,7 +174,7 @@ export default function StatsPage() {
               <p className="text-sm text-gray-600">備份你的學習進度</p>
             </div>
             <button
-              onClick={exportLearningData}
+              onClick={() => exportLearningData(profile.key)}
               className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
               匯出 JSON
@@ -202,8 +205,8 @@ export default function StatsPage() {
 
           <div className="flex items-center justify-between p-4 bg-red-50 rounded-lg">
             <div>
-              <h3 className="font-semibold text-red-700 mb-1">清除所有資料</h3>
-              <p className="text-sm text-red-600">刪除所有學習記錄（無法復原）</p>
+              <h3 className="font-semibold text-red-700 mb-1">清除{profile.name}的資料</h3>
+              <p className="text-sm text-red-600">不會刪除另一位學習者的紀錄</p>
             </div>
             <button
               onClick={handleClearData}

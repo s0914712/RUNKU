@@ -2,28 +2,20 @@ import { useState, useEffect } from 'react';
 import Flashcard from '../components/Flashcard';
 import { useLearningRecords, useDailyStats } from '../hooks/useLocalStorage';
 import { calculateNextReview, getDueWords, FAMILIARITY_LEVELS } from '../utils/spacedRepetition';
+import { useProfile } from '../context/ProfileContext';
 
 export default function StudyPage() {
-  const [words, setWords] = useState([]);
+  const { profile } = useProfile();
+  const words = profile.words;
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [learningRecords, setLearningRecords] = useLearningRecords();
-  const [, updateTodayStats] = useDailyStats();
+  const [learningRecords, setLearningRecords] = useLearningRecords(profile.key);
+  const [, updateTodayStats] = useDailyStats(profile.key);
   const [studyMode, setStudyMode] = useState('due'); // 'due', 'new', 'all'
 
-  // 載入單字資料
   useEffect(() => {
-    fetch('https://raw.githubusercontent.com/s0914712/RUNKU/main/data/vocabulary.json')
-      .then(res => res.json())
-      .then(data => {
-        setWords(data.words || []);
-        setIsLoading(false);
-      })
-      .catch(err => {
-        console.error('Failed to load vocabulary:', err);
-        setIsLoading(false);
-      });
-  }, []);
+    setCurrentIndex(0);
+    setStudyMode('due');
+  }, [profile.key]);
 
   // 根據模式篩選單字
   const getFilteredWords = () => {
@@ -94,17 +86,6 @@ export default function StudyPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[500px]">
-        <div className="text-center">
-          <div className="text-6xl mb-4 animate-bounce">📚</div>
-          <div className="text-xl text-gray-600">載入單字中...</div>
-        </div>
-      </div>
-    );
-  }
-
   if (words.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[500px]">
@@ -112,7 +93,7 @@ export default function StudyPage() {
           <div className="text-6xl mb-4">😢</div>
           <h2 className="text-2xl font-bold mb-2">找不到單字庫</h2>
           <p className="text-gray-600">
-            請確認 GitHub 上的 vocabulary.json 檔案存在
+            {profile.name}的單字庫目前沒有內容
           </p>
         </div>
       </div>
@@ -148,7 +129,8 @@ export default function StudyPage() {
     <div className="space-y-8">
       {/* 標題和模式選擇 */}
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-6">複習單字</h1>
+        <h1 className="text-4xl font-bold mb-2">{profile.emoji} {profile.name}的複習單字</h1>
+        <p className="text-gray-500 mb-6">目前使用：{profile.description}</p>
         
         {/* 模式切換 */}
         <div className="flex justify-center gap-4 mb-4">
