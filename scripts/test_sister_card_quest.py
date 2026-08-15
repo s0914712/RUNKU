@@ -44,9 +44,11 @@ def desktop_flow(browser):
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.on("response", lambda response: errors.append(f"HTTP {response.status}: {response.url}") if response.status >= 400 else None)
 
+    page.goto(BASE_URL)
+    page.evaluate("localStorage.removeItem('runku_sister_card_quest_v1')")
     open_card_game(page)
     intro_stats = page.locator(".cq-feature-row").inner_text()
-    assert "39" in intro_stats and "8" in intro_stats
+    assert "39" in intro_stats and "4/30" in intro_stats
     assert page.locator(".cq-intro-showcase img").count() == 4
     assert all(
         width > 0
@@ -60,50 +62,69 @@ def desktop_flow(browser):
     page.get_by_role("button", name="撕開星光卡包").wait_for()
     page.screenshot(path=OUTPUT / "booster-desktop.png", full_page=True)
     page.get_by_role("button", name="撕開星光卡包").click()
-    page.get_by_role("heading", name="從八張卡選兩隻組隊").wait_for()
-    assert page.locator(".cq-card-grid .cq-card").count() == 8
+    page.get_by_role("heading", name="從 4 張卡選兩隻組隊").wait_for()
+    assert page.locator(".cq-card-grid .cq-card").count() == 4
     assert page.locator(".cq-card-grid img").evaluate_all(
         "images => images.every(image => image.naturalWidth > 0)"
     )
     card_text = page.locator(".cq-card-grid").inner_text()
-    assert "SKYHARE" in card_text and "ENGLISH STORY" in card_text
-    page.locator('.cq-card[data-beast="skyhare"]').click()
-    page.locator('.cq-card[data-beast="mosscub"]').click()
+    assert "SPARKIT" in card_text and "ENGLISH STORY" in card_text
+    assert page.locator(".cq-card-name h3").first.evaluate("element => parseFloat(getComputedStyle(element).fontSize)") >= 28
+    page.locator('.cq-card[data-beast="sparkit"]').click()
+    page.locator('.cq-card[data-beast="fernhorn"]').click()
     assert page.locator(".cq-card-grid .is-selected").count() == 2
     page.screenshot(path=OUTPUT / "deck-builder-desktop.png", full_page=True)
 
     page.get_by_role("button", name="帶著牌組出戰 ⚔").click()
     page.get_by_test_id("card-quest-battle").wait_for()
     assert "屬性有利" in page.locator(".cq-deck-panel").inner_text()
+    assert page.locator(".cq-question-row h2").evaluate("element => parseFloat(getComputedStyle(element).fontSize)") >= 28
     page.locator(".cq-sound-button").click()
     page.screenshot(path=OUTPUT / "battle-desktop.png", full_page=True)
 
+    quiz_types = {page.get_by_test_id("card-quest-battle").get_attribute("data-quiz-type")}
     page.locator('.cq-word-hand button[data-correct="false"]').first.click()
     page.locator(".cq-feedback-wrong").wait_for()
-    assert "7 / 8" in page.locator(".cq-player-zone .cq-hp").inner_text()
+    assert "11 / 12" in page.locator(".cq-player-zone .cq-hp").inner_text()
     page.get_by_role("button", name="下一回合 →").click()
 
-    for turn in range(3):
+    for turn in range(5):
+        quiz_types.add(page.get_by_test_id("card-quest-battle").get_attribute("data-quiz-type"))
         page.locator('.cq-word-hand button[data-correct="true"]').click()
         page.locator(".cq-feedback-correct").wait_for()
-        if turn < 2:
+        assert page.locator(".cq-attack-cinematic").count() == 1
+        assert "DAMAGE" in page.locator(".cq-move-title").inner_text()
+        if turn == 0:
+            page.screenshot(path=OUTPUT / "attack-cinematic-desktop.png", full_page=True)
+        if turn < 4:
             page.get_by_role("button", name="下一回合 →").click()
         else:
             page.get_by_role("button", name="收下勝利卡 →").click()
 
+    assert quiz_types == {"translation", "listen", "meaning", "picture", "spelling"}, quiz_types
     page.locator(".cq-result.is-victory").wait_for()
     assert "勝利！" in page.locator(".cq-result h1").inner_text()
     page.screenshot(path=OUTPUT / "victory-desktop.png", full_page=True)
     records = json.loads(page.evaluate("localStorage.getItem('runku_sister_card_quest_v1')"))
     assert records["wins"] == 1, records
-    assert len(records["mastered"]) == 3, records
+    assert len(records["mastered"]) == 5, records
+    assert len(records["unlocked"]) == 4 and records["drawTokens"] == 2, records
+
+    page.get_by_role("button", name="再開一包 ✦").click()
+    page.get_by_role("button", name="撕開星光卡包").click()
+    page.get_by_role("heading", name="從 5 張卡選兩隻組隊").wait_for()
+    assert page.locator(".cq-card-grid .cq-card").count() == 5
+    assert page.locator(".cq-new-ribbon").count() == 1
+    assert "SKYHARE" in page.locator(".cq-new-ribbon").locator("xpath=ancestor::button[contains(@class, 'cq-card')]").inner_text()
+    records = json.loads(page.evaluate("localStorage.getItem('runku_sister_card_quest_v1')"))
+    assert len(records["unlocked"]) == 5 and records["drawTokens"] == 1, records
 
     page.reload()
     page.wait_for_load_state("networkidle")
     page.get_by_role("button").filter(has_text="星獸單字卡牌戰").click()
     page.locator(".cq-intro h1").wait_for()
     stats = page.locator(".cq-feature-row").inner_text()
-    assert "競技場勝場" in stats and "1" in stats
+    assert "5/30" in stats and "可抽新卡" in stats and "1" in stats
     assert errors == [], errors
     context.close()
 
@@ -127,13 +148,17 @@ def mobile_flow(browser):
     page.on("pageerror", lambda error: errors.append(str(error)))
     page.on("response", lambda response: errors.append(f"HTTP {response.status}: {response.url}") if response.status >= 400 else None)
 
+    page.goto(BASE_URL)
+    page.evaluate("localStorage.removeItem('runku_sister_card_quest_v1')")
     open_card_game(page)
     assert_no_overflow(page)
     page.screenshot(path=OUTPUT / "intro-mobile.png", full_page=True)
     page.get_by_role("button", name="開啟星光卡包 ✦").click()
     page.get_by_role("button", name="撕開星光卡包").click()
-    page.get_by_role("heading", name="從八張卡選兩隻組隊").wait_for()
+    page.get_by_role("heading", name="從 4 張卡選兩隻組隊").wait_for()
     page.wait_for_timeout(1100)
+    assert page.locator(".cq-card-grid .cq-card").count() == 4
+    assert page.locator(".cq-card-name h3").first.evaluate("element => parseFloat(getComputedStyle(element).fontSize)") >= 26
     assert_no_overflow(page)
     page.screenshot(path=OUTPUT / "deck-builder-mobile.png", full_page=True)
     assert errors == [], errors

@@ -96,3 +96,90 @@ button.cq-card:hover { transform: translateY(-10px) rotate(-1deg); box-shadow: i
 @media (prefers-reduced-motion: reduce) {
   .card-quest *, .card-quest *::before, .card-quest *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
 }
+
+/* Large-print collector edition: comfortable reading distance for children. */
+.card-quest { min-height: 820px; font-size: 20px; line-height: 1.55; }
+.cq-eyebrow { font-size: 17px; letter-spacing: .12em; }
+.cq-main-button { min-width: 320px; min-height: 68px; padding: 18px 28px; font-size: 21px; line-height: 1.35; }
+.cq-main-button span { font-size: 30px; }
+
+.cq-card { width: 300px; min-height: 535px; padding: 10px; border-width: 4px; }
+.cq-card-top { height: 39px; grid-template-columns: auto 1fr 34px; gap: 7px; padding: 0 7px; }
+.cq-card-top span { font-size: 12px; }.cq-card-top b { font-size: 15px; }.cq-card-top i { width: 32px; height: 32px; font-size: 22px; }
+.cq-card-art { height: 246px; }.cq-card-art > span { font-size: 9px; }
+.cq-card-name { padding: 10px 7px 8px; }.cq-card-name small { font-size: 11px; }.cq-card-name h3 { max-width: 220px; font-size: 29px; }.cq-card-name > b { font-size: 24px; }.cq-card-name > b small { font-size: 10px; }
+.cq-card-skill { grid-template-columns: 38px 1fr auto; gap: 8px; padding: 10px 6px; }.cq-card-skill > span { width: 36px; height: 36px; font-size: 21px; }.cq-card-skill em { font-size: 9px; }.cq-card-skill b { font-size: 14px; }.cq-card-skill small { font-size: 11px; }.cq-card-skill strong { font-size: 23px; }
+.cq-card-flavor { min-height: 83px; margin: 0 7px 7px; padding: 7px 9px; }.cq-card-flavor b { font-size: 9px; }.cq-card-flavor p { font-size: 13px; line-height: 1.35; }.cq-card-flavor small { font-size: 10px; line-height: 1.4; }
+.cq-card > footer { padding: 7px; font-size: 10px; }
+.cq-selected-stamp { width: 138px; height: 82px; font-size: 20px; }.cq-selected-stamp small { margin-top: -12px; font-size: 11px; }
+.cq-new-ribbon { position: absolute; z-index: 10; right: -49px; top: 31px; width: 190px; padding: 8px 5px; border-block: 3px solid #fff4a6; background: #dc3f59; color: #fff; font: 800 17px/1 Changa, sans-serif; text-align: center; transform: rotate(38deg); box-shadow: 0 5px 12px rgba(16,24,40,.35); }
+.cq-new-ribbon small { display: block; margin-top: 5px; font-size: 10px; }
+.cq-reveal.is-new-unlock .cq-card { animation: cq-new-card-glow 1.6s ease-in-out 2; box-shadow: inset 0 0 0 3px #fff, 0 0 0 8px var(--cq-gold), 0 0 55px #f39e4f; }
+@keyframes cq-new-card-glow { 50% { translate: 0 -12px; filter: brightness(1.12) saturate(1.18); } }
+.cq-card.is-compact { width: 220px; min-height: 352px; padding: 7px; }.cq-card.is-compact .cq-card-art { height: 186px; }.cq-card.is-compact .cq-card-top { height: 29px; }.cq-card.is-compact .cq-card-name h3 { max-width: 150px; font-size: 19px; }.cq-card.is-compact .cq-card-skill { padding: 6px 3px; }.cq-card.is-compact .cq-card-skill > span { width: 27px; height: 27px; font-size: 16px; }.cq-card.is-compact .cq-card-skill strong { font-size: 17px; }
+
+.cq-intro-copy { padding-block: 74px; }.cq-intro-copy h1 { font-size: clamp(64px, 7vw, 94px); }.cq-title-en { font-size: 17px; }
+.cq-professor-note { max-width: 680px; padding: 22px; }.cq-professor-note > span { font-size: 45px; }.cq-professor-note p { font-size: 20px; line-height: 1.7; }
+.cq-feature-row { gap: 30px; margin: 32px 0; }.cq-feature-row b { font-size: 38px; }.cq-feature-row small { max-width: 82px; font-size: 15px; }
+.cq-safe-note { font-size: 14px; }
+.cq-intro-showcase { min-height: 820px; }.cq-arena-mark { padding: 12px 26px; font-size: 16px; }.cq-arena-mark b { font-size: 28px; }
+
+.cq-game-header { min-height: 96px; gap: 22px; padding: 12px 22px; }.cq-game-header button { min-height: 48px; padding: 10px 14px; font-size: 16px; }.cq-game-header b { font-size: 19px; }.cq-game-header small { font-size: 13px; }.cq-game-header > span { font-size: 17px; }
+.cq-pack-screen::before { inset-block-start: 96px; }.cq-pack-opening { min-height: 760px; }.cq-pack-opening h2 { font-size: clamp(50px, 6vw, 76px); }.cq-pack-opening > p:last-child { max-width: 660px; font-size: 18px; }
+.cq-booster { width: 300px; height: 465px; }.cq-booster span { font-size: 95px; }.cq-booster b { font-size: 31px; }.cq-booster small { font-size: 14px; }.cq-booster em { font-size: 12px; }
+.cq-deck-builder { padding: 42px clamp(20px, 4vw, 54px) 48px; }.cq-builder-heading { margin-bottom: 24px; }.cq-builder-heading h2 { font-size: 51px; }.cq-builder-heading > div > p:last-child { font-size: 18px; }.cq-deck-slots span { width: 72px; height: 96px; font-size: 28px; }
+.cq-collection-progress { display: grid; grid-template-columns: auto minmax(180px,1fr) auto; align-items: center; gap: 18px; max-width: 1050px; margin: 0 auto 34px; padding: 16px 20px; border: 3px solid var(--cq-ink); border-radius: 10px; background: #fff8df; box-shadow: 5px 6px 0 rgba(16,24,40,.2); text-align: left; }
+.cq-collection-progress div { display: flex; align-items: baseline; gap: 10px; }.cq-collection-progress b { color: #b34254; font: 800 25px Changa, sans-serif; }.cq-collection-progress span, .cq-collection-progress strong { font-size: 17px; }.cq-collection-progress > i { display: block; height: 18px; overflow: hidden; border: 2px solid var(--cq-ink); border-radius: 20px; background: #d4c9b2; }.cq-collection-progress > i > span { display: block; height: 100%; background: linear-gradient(90deg, #55e5dd, #ffd75e); transition: width .4s ease; }
+.cq-card-grid { grid-template-columns: repeat(3, 1fr); gap: 32px 22px; }.cq-locked-vault { margin: -4px auto 32px; padding: 15px 20px; border: 2px dashed #7d735f; border-radius: 8px; color: #665e50; font-size: 19px; font-weight: 800; }
+
+.cq-battle-table { min-height: 920px; grid-template-rows: 440px auto; }.cq-arena-lines { width: 620px; height: 270px; }
+.cq-combo-meter { position: absolute; z-index: 9; left: 50%; top: 18px; min-width: 175px; padding: 8px 14px; border: 3px solid #0d1527; border-radius: 7px; background: #fff8df; text-align: center; transform: translateX(-50%); box-shadow: 4px 5px 0 rgba(0,0,0,.3); }.cq-combo-meter small, .cq-combo-meter b, .cq-combo-meter span { display: block; }.cq-combo-meter small { color: #a43b4d; font: 800 11px Changa, sans-serif; }.cq-combo-meter b { font: 800 31px/.95 Changa, sans-serif; }.cq-combo-meter span { color: #685f50; font-size: 11px; font-weight: 800; }
+.cq-trainer-tag { min-width: 210px; padding: 11px 14px; }.cq-trainer-tag span { font-size: 11px; }.cq-trainer-tag b { font-size: 19px; }
+.cq-hp { bottom: 86px; width: 280px; padding: 10px 13px; }.cq-hp.is-enemy { top: 88px; }.cq-hp > div { font-size: 14px; }.cq-hp > i { height: 13px; }
+.cq-battle-card { transform: scale(.92); }.cq-enemy-card { right: 17%; }.cq-player-card { left: 17%; }.cq-versus { width: 92px; height: 92px; font-size: 31px; }.cq-versus small { margin-top: -24px; font-size: 10px; }
+.cq-counter-flash { font-size: 32px; }.cq-counter-flash b { font-size: 22px; }
+.cq-attack-cinematic { position: absolute; z-index: 18; inset: 0; display: grid; place-items: center; overflow: hidden; pointer-events: none; background: radial-gradient(circle, rgba(255,255,255,.35), rgba(19,24,51,.2) 32%, rgba(19,24,51,.58)); animation: cq-cinematic-in .8s ease-out both; }
+.cq-energy-core { position: absolute; display: grid; place-items: center; width: 125px; height: 125px; border: 5px solid white; border-radius: 50%; background: var(--cq-gold); color: #16203b; font: 900 75px Georgia, serif; box-shadow: 0 0 25px white, 0 0 75px var(--cq-gold); animation: cq-core-strike .8s ease-out both; }
+.cq-move-title { position: absolute; z-index: 3; left: 50%; top: 49%; width: min(620px, 72%); padding: 17px 26px; border: 4px solid white; background: rgba(13,21,39,.92); color: white; text-align: center; transform: translate(-50%,-50%) rotate(-2deg); box-shadow: 8px 9px 0 rgba(0,0,0,.45), 0 0 45px var(--cq-gold); animation: cq-title-strike .65s .16s cubic-bezier(.2,.9,.3,1.25) both; }
+.cq-move-title small, .cq-move-title b, .cq-move-title strong { display: block; }.cq-move-title small { color: var(--cq-cyan); font-size: 17px; font-weight: 900; }.cq-move-title b { color: var(--cq-gold); font: 800 clamp(27px,4vw,49px)/1 Changa, sans-serif; letter-spacing: .04em; }.cq-move-title strong { margin-top: 8px; font: 800 16px Changa, sans-serif; }
+.cq-move-particles, .cq-move-particles i { position: absolute; inset: 0; }.cq-move-particles i { left: 50%; top: 50%; width: 20px; height: 95px; border-radius: 50%; background: linear-gradient(transparent, white, var(--cq-gold)); transform-origin: 50% 0; rotate: calc(var(--particle) * 45deg); animation: cq-particle-burst .7s ease-out both; }.cq-move-particles i:nth-child(1) { --particle: 0; }.cq-move-particles i:nth-child(2) { --particle: 1; }.cq-move-particles i:nth-child(3) { --particle: 2; }.cq-move-particles i:nth-child(4) { --particle: 3; }.cq-move-particles i:nth-child(5) { --particle: 4; }.cq-move-particles i:nth-child(6) { --particle: 5; }.cq-move-particles i:nth-child(7) { --particle: 6; }.cq-move-particles i:nth-child(8) { --particle: 7; }
+.cq-cinematic-forest .cq-energy-core { background: #76d881; }.cq-cinematic-tide .cq-energy-core { background: #5cd9ef; }.cq-cinematic-ember .cq-energy-core { background: #ff8154; }.cq-cinematic-spark .cq-energy-core { background: #ffe05f; }
+@keyframes cq-cinematic-in { from { opacity: 0; } } @keyframes cq-core-strike { 0% { scale: .2; translate: -42vw 20vh; } 55% { scale: 1.5; translate: 18vw -7vh; } 100% { scale: .86; translate: 0 -100px; } } @keyframes cq-title-strike { from { opacity: 0; scale: .4; } } @keyframes cq-particle-burst { from { opacity: 1; scale: .2; } to { opacity: 0; scale: 5; } }
+.cq-command-board { min-height: 480px; padding: 18px 23px 25px; }
+.cq-quiz-modes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 12px; }.cq-quiz-modes span { min-height: 39px; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 6px; border: 2px solid #8c816c; border-radius: 5px; background: #eee3cb; color: #756c5c; font-size: 14px; font-weight: 800; }.cq-quiz-modes span b { color: #a24553; font: 800 12px Changa, sans-serif; }.cq-quiz-modes span.is-current { border-color: #101828; background: #ffd75e; color: #101828; box-shadow: 3px 4px 0 #101828; }
+.cq-battle-log { min-height: 62px; padding: 11px 16px; }.cq-battle-log p { font-size: 17px; }.cq-question-row { min-height: 94px; padding: 14px 0; }.cq-question-row small { font-size: 13px; }.cq-question-row h2 { font-size: 31px; line-height: 1.35; }.cq-sound-button { min-height: 61px; padding: 10px 15px; }.cq-sound-button span { font-size: 31px; }.cq-sound-button small { font-size: 14px; }
+.cq-command-layout { grid-template-columns: 220px minmax(0,1fr); gap: 16px; }.cq-deck-panel { gap: 9px; padding: 13px; }.cq-deck-panel > b { font-size: 13px; }.cq-type-pill { padding: 9px 11px; font-size: 17px; }.cq-deck-panel > small { min-height: 42px; font-size: 13px; }.cq-deck-panel > button { min-height: 64px; grid-template-columns: 54px 1fr; gap: 9px; padding: 7px; font-size: 12px; }.cq-deck-panel > button img { width: 54px; height: 54px; }
+.cq-word-hand { gap: 12px; }.cq-word-hand button { min-height: 155px; gap: 5px; padding: 18px 8px 8px; border-width: 3px; }.cq-word-hand button > small { left: 9px; top: 6px; font-size: 10px; }.cq-word-hand button > span { font-size: 40px; }.cq-word-hand button b { font-size: clamp(20px,2vw,26px); line-height: 1.1; }.cq-word-hand button em { font-size: 11px; }
+.cq-feedback { inset: 86px 23px 25px 259px; gap: 17px; padding: 22px 25px; }.cq-feedback > span { width: 76px; height: 76px; font-size: 49px; }.cq-feedback b { font-size: 24px; }.cq-feedback small { font-size: 17px; }.cq-feedback button { min-height: 58px; padding: 12px 17px; font-size: 17px; }
+
+.cq-result { min-height: 850px; }.cq-result > p:not(.cq-eyebrow) { max-width: 720px; font-size: 19px; }.cq-result-stats { width: min(760px,100%); }.cq-result-stats span { padding: 16px; }.cq-result-stats small { font-size: 13px; }.cq-result-stats b { font-size: 23px; }.cq-result-actions > button:last-child { font-size: 17px; }
+
+@media (max-width: 1100px) {
+  .cq-card-grid { grid-template-columns: repeat(2, 1fr); }.cq-reveal .cq-card { width: 300px; }
+  .cq-collection-progress { grid-template-columns: auto 1fr; }.cq-collection-progress > strong { grid-column: 1 / -1; text-align: center; }
+  .cq-enemy-card { right: 9%; }.cq-player-card { left: 9%; }
+  .cq-command-layout { grid-template-columns: 190px minmax(0,1fr); }.cq-word-hand { grid-template-columns: repeat(2,1fr); }
+  .cq-feedback { inset-inline-start: 229px; }
+}
+
+@media (max-width: 720px) {
+  .card-quest { min-height: 780px; font-size: 18px; }
+  .cq-main-button { width: min(100%, 330px); min-width: 0; font-size: 20px; }
+  .cq-intro-copy { padding: 52px 18px; }.cq-intro-copy h1 { font-size: 57px; }.cq-title-en { font-size: 14px; }.cq-professor-note p { font-size: 18px; }.cq-feature-row { flex-wrap: wrap; }.cq-feature-row b { font-size: 32px; }.cq-feature-row small { font-size: 14px; }
+  .cq-fan .cq-card { transform: scale(.58); }.cq-intro-showcase { min-height: 520px; }
+  .cq-game-header { min-height: 128px; padding: 10px 12px; }.cq-game-header button { font-size: 15px; }.cq-game-header b { font-size: 17px; }.cq-game-header small { font-size: 12px; }.cq-game-header > span { font-size: 15px; }
+  .cq-pack-opening { min-height: 700px; }.cq-pack-opening h2 { font-size: 48px; }.cq-pack-opening > p:last-child { font-size: 17px; }.cq-booster { width: 270px; height: 420px; }
+  .cq-builder-heading { align-items: flex-start; flex-direction: column; }.cq-builder-heading h2 { font-size: 38px; }.cq-builder-heading > div:first-child > p:last-child { display: block; font-size: 17px; }.cq-deck-slots { align-self: center; }
+  .cq-collection-progress { grid-template-columns: 1fr; gap: 10px; text-align: center; }.cq-collection-progress div { justify-content: center; }.cq-collection-progress > strong { grid-column: auto; }
+  .cq-card-grid { grid-template-columns: 1fr; gap: 30px; }.cq-reveal .cq-card { width: min(100%, 320px); min-height: 540px; padding: 10px; }.cq-reveal .cq-card-art { height: 256px; }.cq-reveal .cq-card-name h3 { max-width: 220px; font-size: 28px; }.cq-reveal .cq-card-skill strong { font-size: 22px; }.cq-reveal .cq-card-flavor { min-height: 83px; padding: 7px 9px; }.cq-reveal .cq-card-flavor p { font-size: 13px; }.cq-reveal .cq-card-flavor small { display: block; }.cq-reveal .cq-card-skill { padding: 10px 6px; }
+  .cq-locked-vault { font-size: 17px; }
+  .cq-battle-table { grid-template-rows: 370px auto; }.cq-arena-lines { width: 340px; height: 160px; }.cq-combo-meter { min-width: 138px; top: 9px; padding: 5px 8px; }.cq-combo-meter small { font-size: 9px; }.cq-combo-meter b { font-size: 24px; }.cq-combo-meter span { display: none; }
+  .cq-battle-card { transform: scale(.55); }.cq-enemy-card { right: -4%; top: 14px; }.cq-player-card { left: -4%; bottom: -8px; }.cq-trainer-tag { min-width: 130px; padding: 7px 9px; }.cq-trainer-tag span { font-size: 9px; }.cq-trainer-tag b { font-size: 15px; }.cq-hp { width: 160px; bottom: 62px; padding: 7px; }.cq-hp.is-enemy { top: 65px; }.cq-hp > div { font-size: 11px; }.cq-versus { width: 62px; height: 62px; font-size: 21px; }.cq-versus small { margin-top: -18px; font-size: 8px; }
+  .cq-move-title { width: 88%; padding: 14px 10px; }.cq-move-title small { font-size: 14px; }.cq-move-title b { font-size: 26px; }.cq-move-title strong { font-size: 13px; }.cq-energy-core { width: 90px; height: 90px; font-size: 52px; }
+  .cq-command-board { padding: 13px 10px 22px; }.cq-quiz-modes { overflow-x: auto; grid-template-columns: repeat(5, minmax(80px,1fr)); padding-bottom: 5px; }.cq-quiz-modes span { min-height: 48px; flex-direction: column; gap: 0; font-size: 13px; }.cq-battle-log p { font-size: 16px; }
+  .cq-question-row { align-items: stretch; }.cq-question-row h2 { font-size: 28px; }.cq-sound-button { align-self: stretch; justify-content: center; }
+  .cq-command-layout { display: block; }.cq-deck-panel { grid-template-columns: 1fr; margin-bottom: 13px; }.cq-deck-panel > b, .cq-deck-panel > small { display: block; }.cq-deck-panel > button { height: auto; min-height: 64px; }.cq-deck-panel > button img { width: 54px; height: 54px; }
+  .cq-word-hand { grid-template-columns: repeat(2, minmax(0,1fr)); gap: 11px; }.cq-word-hand button { min-height: 142px; }.cq-word-hand button > span { font-size: 36px; }.cq-word-hand button b { font-size: 21px; }
+  .cq-feedback { inset: auto 10px 14px; max-height: 78vh; overflow-y: auto; flex-wrap: wrap; padding: 18px; }.cq-feedback > span { width: 62px; height: 62px; }.cq-feedback > div { min-width: 200px; }.cq-feedback b { font-size: 21px; }.cq-feedback small { font-size: 16px; }.cq-feedback button { width: 100%; }
+  .cq-result h1 { font-size: 50px; }.cq-result > p:not(.cq-eyebrow) { font-size: 18px; }.cq-result-stats small { font-size: 13px; }.cq-result-stats b { font-size: 21px; }
+}
