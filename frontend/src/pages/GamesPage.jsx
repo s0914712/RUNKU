@@ -5,6 +5,7 @@ import SpellingChallenge from '../components/Games/SpellingChallenge';
 import BodyAdventure from '../components/Games/BodyAdventure';
 import SisterAdventure from '../components/Games/SisterAdventure';
 import SisterCardQuest from '../components/Games/SisterCardQuest';
+import YoungerSpellingQuest from '../components/Games/YoungerSpellingQuest';
 import { useProfile } from '../context/ProfileContext';
 
 export default function GamesPage() {
@@ -48,7 +49,17 @@ export default function GamesPage() {
       color: 'from-cyan-700 via-slate-800 to-amber-600',
       featured: true,
       action: '開啟卡包',
-    }] : []),
+    }] : [{
+      id: 'younger-spelling-quest',
+      name: '星獸拼字故事學院',
+      englishName: 'LEXIBEAST · STORY SPELLING QUEST',
+      icon: '🔤',
+      description: '跟著妹妹的單字故事聽發音、找字母、填進英文空格，逐步收集 30 張原創星獸卡。',
+      component: YoungerSpellingQuest,
+      color: 'from-emerald-600 via-cyan-700 to-amber-500',
+      featured: true,
+      action: '打開故事書',
+    }]),
     {
       id: 'whackamole',
       name: '單字打地鼠',
@@ -144,7 +155,7 @@ export default function GamesPage() {
     );
   }
 
-  if (['body-adventure', 'sister-adventure', 'sister-card-quest'].includes(selectedGame.id)) {
+  if (['body-adventure', 'sister-adventure', 'sister-card-quest', 'younger-spelling-quest'].includes(selectedGame.id)) {
     return (
       <div className="space-y-4">
         <button

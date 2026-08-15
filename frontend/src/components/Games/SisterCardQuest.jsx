@@ -31,7 +31,7 @@ import zappuffArt from '../../assets/creatures/zappuff.webp';
 import orchidrakeArt from '../../assets/creatures/orchidrake.webp';
 import './SisterCardQuest.css';
 
-const BEASTS = [
+export const BEASTS = [
   {
     id: 'sparkit',
     name: '閃尾',
@@ -376,7 +376,7 @@ function seededShuffle(items, seed) {
   return output;
 }
 
-function speak(text) {
+export function speak(text) {
   if (!window.speechSynthesis) return;
   window.speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
@@ -444,7 +444,7 @@ function readRecords() {
   return { wins: 0, mastered: [], unlocked: starterIds, drawTokens: 0 };
 }
 
-function CreatureCard({ beast, selected = false, compact = false, faceDown = false, newlyUnlocked = false, onClick }) {
+export function CreatureCard({ beast, selected = false, compact = false, faceDown = false, newlyUnlocked = false, onClick }) {
   const Tag = onClick ? 'button' : 'div';
   return (
     <Tag
