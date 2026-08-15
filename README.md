@@ -2,7 +2,13 @@
 
 單字遊戲樂園 — 用遊戲幫小朋友背英文單字！
 
-👉 線上遊玩：https://s0914712.github.io/RUNKU/
+## 🌐 網站網址
+
+### [▶️ 立即線上遊玩 RUNKU](https://s0914712.github.io/RUNKU/)
+
+**正式網站：** https://s0914712.github.io/RUNKU/
+
+不需要安裝或登入，使用手機、平板、電腦的現代瀏覽器即可開始遊玩。
 
 ## 👩👧 兩個人，兩份單字
 
@@ -26,6 +32,16 @@
 | 🔨 **打地鼠** | 60 秒內敲中畫面上正確的英文單字，**停留秒數與難度可自行設定**，依難度分別記錄最佳成績 | 每次敲中 10～22 顆星 |
 | ✏️ **拼字大師** | 點選字母磁磚，把單字拼出來，可聽發音提示 | 每題 15 顆星 |
 | 📖 **單字卡** | 依主題瀏覽全部單字，點卡片聽發音，顯示熟練度星星 | — |
+
+## ⚔️ 冒險與卡牌遊戲
+
+| 遊戲 | 適用單字庫 | 玩法 |
+|------|-----------|------|
+| ⚔️ **姊姊勇者傳說** | 姊姊 | 使用單字斬、聽音術和拼字魔法，探索四座城鎮並討伐三首闇語龍 |
+| ✦ **星獸單字卡牌戰** | 姊姊 | 收集 30 張原創星獸卡，以中翻英、聽音、英翻中、看圖與拼字測驗發動華麗招式 |
+| 🛡️ **妹妹勇者傳說** | 妹妹 | 認識動物、物品、數字與身體部位單字，探索彩虹王國的四個區域 |
+
+星獸卡牌戰一開始擁有 4 張卡；每學會 3 個新單字可獲得一次抽卡機會，競技場獲勝也會得到抽卡獎勵，逐步解鎖完整 30 張圖鑑。遊戲進度會保存在目前瀏覽器中。
 
 ## ✨ 特色
 
@@ -86,64 +102,50 @@
 ## 🚀 使用方式
 
 ### 直接遊玩
-開啟 https://s0914712.github.io/RUNKU/ 即可，不需要安裝任何東西。
+開啟 [https://s0914712.github.io/RUNKU/](https://s0914712.github.io/RUNKU/) 即可，不需要安裝任何東西。
 
 ### 本機執行
 ```bash
 git clone https://github.com/s0914712/RUNKU.git
 cd RUNKU
-# 直接用瀏覽器打開 index.html，或起一個簡易伺服器：
-npx http-server .
+cd frontend
+npm install
+npm run dev
 ```
 
-`index.html` 是**單一檔案應用程式**，不需要建置流程、不依賴任何外部資源。
+終端機會顯示本機網址，通常是 `http://localhost:5173/`。建立正式版本可執行 `npm run build`，輸出會放在 `frontend/dist/`。
 
 ## ✏️ 更換單字
 
-要換成新一課的單字時，編輯 `index.html` 裡對應的陣列即可
-（姐姐是 `WORDS_JIE`、妹妹是 `WORDS_MEI`）：
+要換成新一課的單字時，編輯對應的 JSON 單字檔即可：
+
+- 姊姊：`data/vocabulary-jie.json`
+- 妹妹：`data/vocabulary.json`
+
+React 版本會由 `frontend/src/context/ProfileContext.jsx` 自動載入這兩份單字庫。每個單字的基本格式如下：
 
 ```js
-{ id:59, en:'apple', zh:'蘋果', cat:'things', emoji:'🍎' },
-// 有不規則複數時再加上：
-{ id:60, en:'child', zh:'小孩', cat:'people', emoji:'🧒', plural:'children', note:'one child - two children' },
+{ "id": 59, "en": "apple", "zh": "蘋果", "cat": "things", "emoji": "🍎" }
 ```
 
-`cat` 可用的主題：
-- 姐姐（`CATS_JIE`）：`verbs`、`food`、`school`、`life`
-- 妹妹（`CATS_MEI`）：`basics`、`animals`、`things`、`people`、`vehicles`、`numbers`、`body`
-
-要新增第三個人的話，在 `PROFILES` 加一筆就好，記得給一個沒用過的 `storeKey`：
-
-```js
-const PROFILES = {
-  jie: { key:'jie', name:'姐姐', emoji:'👩', color:'#3B82F6', sub:'…',
-         storeKey:'runku_jie_v1', words:WORDS_JIE, cats:CATS_JIE, showNo:true },
-  // …
-};
-```
-
-同一份單字也維護在其他地方，方便其他程式讀取：
-- `words` — 妹妹單字的純文字 `中文-英文` 格式（React 版 `WordLearningPage` 會讀這個檔）
-- `data/vocabulary.json` — 妹妹單字的完整結構（主題／emoji／複數）
-- `data/vocabulary-jie.json` — 姐姐單字的完整結構（含單字表編號）
+如需增加人物或修改單字分類，可編輯 `frontend/src/context/ProfileContext.jsx`。
 
 ## 📁 專案結構
 
 ```
 RUNKU/
-├── index.html                 # 🎮 主程式（單檔遊戲樂園，GitHub Pages 首頁）
 ├── words                      # 妹妹單字純文字檔（中文-英文）
 ├── data/
 │   ├── vocabulary.json        # 妹妹單字結構化資料（主題／emoji／複數）
 │   └── vocabulary-jie.json    # 姐姐單字結構化資料（含單字表編號）
-├── frontend/                  # React + Vite 版本（實驗中）
+├── frontend/                  # React + Vite 正式網頁應用程式
 │   └── src/
-│       ├── components/
-│       ├── pages/
-│       └── utils/
+│       ├── components/        # 遊戲與共用元件
+│       ├── context/           # 姊妹個人檔案與單字庫
+│       ├── pages/             # 首頁、複習、遊戲、統計等頁面
+│       └── assets/            # 角色與 30 張星獸圖片
 └── .github/workflows/
-    └── deploy.yml             # GitHub Pages 部署
+    └── deploy.yml             # 自動建置並部署至 GitHub Pages
 ```
 
 ## 🌐 瀏覽器支援
