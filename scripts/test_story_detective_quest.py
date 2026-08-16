@@ -1,16 +1,13 @@
 import json
-import os
 from pathlib import Path
-from urllib.parse import urlsplit
 
 from playwright.sync_api import sync_playwright
+
+from runku_test_utils import BASE_URL, reset_storage, watch_errors
 
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "test-results" / "story-detective-quest"
-# The app is served under Vite's `/RUNKU/` base, so the routes live below it.
-BASE_URL = os.environ.get("RUNKU_TEST_URL", "http://127.0.0.1:5173/RUNKU")
-ORIGIN = "{0.scheme}://{0.netloc}".format(urlsplit(BASE_URL))
 
 GAME_NAMES = {"mei": "星獸偵探社・曙光檔案", "jie": "星獸偵探社・蒼藍檔案"}
 STORAGE_KEYS = {"mei": "runku_story_detective_mei_v1", "jie": "runku_story_detective_jie_v1"}
@@ -26,41 +23,6 @@ def use_profile(context, profile):
     context.add_init_script(
         f"localStorage.setItem('runku_active_profile_v2', {json.dumps(profile)});"
     )
-
-
-def watch_errors(page):
-    """Collect app-level errors.
-
-    Only same-origin requests are checked: the card-game stylesheet pulls a Google
-    Fonts sheet, and that request fails on sandboxed/offline machines without the
-    game itself being broken. The generic "Failed to load resource" console line is
-    dropped for the same reason — the network events above already cover it.
-    """
-    errors = []
-
-    def note_console(message):
-        if message.type == "error" and "Failed to load resource" not in message.text:
-            errors.append(message.text)
-
-    def note_response(response):
-        if response.status >= 400 and response.url.startswith(ORIGIN):
-            errors.append(f"HTTP {response.status}: {response.url}")
-
-    def note_failure(request):
-        if request.url.startswith(ORIGIN):
-            errors.append(f"REQUEST FAILED {request.url}: {request.failure}")
-
-    page.on("console", note_console)
-    page.on("pageerror", lambda error: errors.append(str(error)))
-    page.on("response", note_response)
-    page.on("requestfailed", note_failure)
-    return errors
-
-
-def clear_progress(page, profile):
-    page.goto(f"{BASE_URL}/games")
-    page.wait_for_load_state("networkidle")
-    page.evaluate(f"localStorage.removeItem('{STORAGE_KEYS[profile]}')")
 
 
 def open_game(page, profile):
@@ -141,7 +103,7 @@ def desktop_flow(browser):
     context = browser.new_context(viewport={"width": 1440, "height": 1050})
     use_profile(context, "mei")
     page = context.new_page()
-    clear_progress(page, "mei")
+    reset_storage(page, STORAGE_KEYS["mei"])
     errors = watch_errors(page)
     open_game(page, "mei")
 
@@ -199,7 +161,7 @@ def sister_flow(browser):
     context = browser.new_context(viewport={"width": 1440, "height": 1050})
     use_profile(context, "jie")
     page = context.new_page()
-    clear_progress(page, "jie")
+    reset_storage(page, STORAGE_KEYS["jie"])
     errors = watch_errors(page)
     open_game(page, "jie")
     assert "蒼藍檔案" in page.get_by_test_id("story-detective-files").inner_text()
@@ -236,7 +198,7 @@ def mobile_flow(browser):
     use_profile(context, "mei")
     page = context.new_page()
     glossary = chinese_by_english("mei")
-    clear_progress(page, "mei")
+    reset_storage(page, STORAGE_KEYS["mei"])
     errors = watch_errors(page)
     open_game(page, "mei")
     assert_no_horizontal_overflow(page)

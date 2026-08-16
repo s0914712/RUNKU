@@ -1,47 +1,14 @@
-import os
 import re
 from pathlib import Path
-from urllib.parse import urlsplit
 
 from playwright.sync_api import expect, sync_playwright
+
+from runku_test_utils import BASE_URL, watch_errors
 
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "test-results"
 RESULTS.mkdir(exist_ok=True)
-
-# The app is served under Vite's `/RUNKU/` base, so the routes live below it.
-BASE_URL = os.environ.get("RUNKU_TEST_URL", "http://127.0.0.1:5173/RUNKU")
-ORIGIN = "{0.scheme}://{0.netloc}".format(urlsplit(BASE_URL))
-
-
-def watch_errors(page):
-    """Collect app-level errors.
-
-    Only same-origin requests count: the game stylesheets pull a Google Fonts sheet,
-    and that request fails on sandboxed/offline machines without the game itself
-    being broken. The generic "Failed to load resource" console line is dropped for
-    the same reason — the network events below already cover real failures.
-    """
-    errors = []
-
-    def note_console(message):
-        if message.type == "error" and "Failed to load resource" not in message.text:
-            errors.append(message.text)
-
-    def note_response(response):
-        if response.status >= 400 and response.url.startswith(ORIGIN):
-            errors.append(f"HTTP {response.status}: {response.url}")
-
-    def note_failure(request):
-        if request.url.startswith(ORIGIN):
-            errors.append(f"REQUEST FAILED {request.url}: {request.failure}")
-
-    page.on("console", note_console)
-    page.on("pageerror", lambda error: errors.append(str(error)))
-    page.on("response", note_response)
-    page.on("requestfailed", note_failure)
-    return errors
 
 
 def answer_turn(page, target_word):

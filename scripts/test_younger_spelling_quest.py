@@ -1,13 +1,13 @@
 import json
-import os
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
+from runku_test_utils import BASE_URL, reset_storage, watch_errors
+
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "test-results" / "younger-spelling-quest"
-BASE_URL = os.environ.get("RUNKU_TEST_URL", "http://127.0.0.1:5173")
 STORAGE_KEY = "runku_younger_spelling_quest_v1"
 
 
@@ -22,11 +22,6 @@ def open_game(page):
     page.wait_for_load_state("networkidle")
     page.get_by_role("button").filter(has_text="星獸拼字故事學院").click()
     page.get_by_test_id("younger-spelling-intro").wait_for()
-
-
-def clear_progress(page):
-    page.goto(BASE_URL)
-    page.evaluate(f"localStorage.removeItem('{STORAGE_KEY}')")
 
 
 def assert_no_horizontal_overflow(page):
@@ -67,12 +62,8 @@ def desktop_flow(browser):
     context = browser.new_context(viewport={"width": 1440, "height": 1050})
     use_profile(context, "mei")
     page = context.new_page()
-    errors = []
-    page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
-    page.on("pageerror", lambda error: errors.append(str(error)))
-    page.on("response", lambda response: errors.append(f"HTTP {response.status}: {response.url}") if response.status >= 400 else None)
-
-    clear_progress(page)
+    reset_storage(page, STORAGE_KEY)
+    errors = watch_errors(page)
     open_game(page)
     intro = page.get_by_test_id("younger-spelling-intro")
     assert "4/30" in intro.inner_text()
@@ -162,12 +153,8 @@ def mobile_flow(browser):
     context = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=1)
     use_profile(context, "mei")
     page = context.new_page()
-    errors = []
-    page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
-    page.on("pageerror", lambda error: errors.append(str(error)))
-    page.on("response", lambda response: errors.append(f"HTTP {response.status}: {response.url}") if response.status >= 400 else None)
-
-    clear_progress(page)
+    reset_storage(page, STORAGE_KEY)
+    errors = watch_errors(page)
     open_game(page)
     assert_no_horizontal_overflow(page)
     page.screenshot(path=OUTPUT / "intro-mobile.png", full_page=True)

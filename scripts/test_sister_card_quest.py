@@ -1,13 +1,14 @@
 import json
-import os
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
+from runku_test_utils import BASE_URL, reset_storage, watch_errors
+
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "test-results" / "sister-card-quest"
-BASE_URL = os.environ.get("RUNKU_TEST_URL", "http://127.0.0.1:5173")
+STORAGE_KEY = "runku_sister_card_quest_v1"
 
 
 def use_profile(context, profile):
@@ -39,13 +40,8 @@ def desktop_flow(browser):
     context = browser.new_context(viewport={"width": 1440, "height": 1050})
     use_profile(context, "jie")
     page = context.new_page()
-    errors = []
-    page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
-    page.on("pageerror", lambda error: errors.append(str(error)))
-    page.on("response", lambda response: errors.append(f"HTTP {response.status}: {response.url}") if response.status >= 400 else None)
-
-    page.goto(BASE_URL)
-    page.evaluate("localStorage.removeItem('runku_sister_card_quest_v1')")
+    reset_storage(page, STORAGE_KEY)
+    errors = watch_errors(page)
     open_card_game(page)
     intro_stats = page.locator(".cq-feature-row").inner_text()
     assert "39" in intro_stats and "4/30" in intro_stats
@@ -143,13 +139,8 @@ def mobile_flow(browser):
     context = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=1)
     use_profile(context, "jie")
     page = context.new_page()
-    errors = []
-    page.on("console", lambda message: errors.append(message.text) if message.type == "error" else None)
-    page.on("pageerror", lambda error: errors.append(str(error)))
-    page.on("response", lambda response: errors.append(f"HTTP {response.status}: {response.url}") if response.status >= 400 else None)
-
-    page.goto(BASE_URL)
-    page.evaluate("localStorage.removeItem('runku_sister_card_quest_v1')")
+    reset_storage(page, STORAGE_KEY)
+    errors = watch_errors(page)
     open_card_game(page)
     assert_no_overflow(page)
     page.screenshot(path=OUTPUT / "intro-mobile.png", full_page=True)
