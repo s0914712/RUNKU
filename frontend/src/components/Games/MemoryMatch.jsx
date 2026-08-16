@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function MemoryMatch({ words, onComplete }) {
+  const navigate = useNavigate();
   const [cards, setCards] = useState([]);
   const [flipped, setFlipped] = useState([]);
   const [matched, setMatched] = useState([]);
@@ -139,7 +141,7 @@ export default function MemoryMatch({ words, onComplete }) {
             再玩一次
           </button>
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => navigate('/')}
             className="px-8 py-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
           >
             返回首頁

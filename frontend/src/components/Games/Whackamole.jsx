@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 export default function Whackamole({ words, onComplete }) {
+  const navigate = useNavigate();
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
   const [currentWord, setCurrentWord] = useState(null);
@@ -125,7 +127,7 @@ export default function Whackamole({ words, onComplete }) {
             再玩一次
           </button>
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => navigate('/')}
             className="px-8 py-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
           >
             返回首頁
