@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useSpeechSynthesis } from '../../hooks/useSpeechRecognition';
 
 export default function SpellingChallenge({ words, onComplete }) {
+  const navigate = useNavigate();
   const [currentWord, setCurrentWord] = useState(null);
   const [userInput, setUserInput] = useState('');
   const [score, setScore] = useState(0);
@@ -130,7 +132,7 @@ export default function SpellingChallenge({ words, onComplete }) {
             再玩一次
           </button>
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => navigate('/')}
             className="px-8 py-4 bg-gray-200 text-gray-700 rounded-lg font-semibold hover:bg-gray-300 transition-colors"
           >
             返回首頁
