@@ -166,6 +166,36 @@
 .sd-verdict > button { min-height: 62px; padding: 12px 20px; border: 3px solid var(--sd-ink); border-radius: 11px; background: var(--sd-accent); font-size: 18px; font-weight: 900; cursor: pointer; box-shadow: 4px 5px 0 var(--sd-ink); }
 .sd-verdict-wrong { grid-template-columns: auto minmax(0, 1fr); background: #fff1e2; }
 
+/* ---------- Word roots ---------- */
+/* 這張卡也會出現在結案報告的深色背景上，那裡的 color 是白的，
+   所以文字顏色一定要自己指定，不能繼承。 */
+.sd-root-card { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 14px; padding: 16px 18px; border: 3px solid var(--sd-ink); border-radius: 13px; background: #f2f8f2; color: var(--sd-ink); text-align: left; box-shadow: 4px 5px 0 rgba(18,41,74,.16); }
+.sd-root-card[data-root-kind="root"] { background: #eef7ee; }
+.sd-root-card[data-root-kind="build"] { background: #eef3fc; }
+.sd-root-card[data-root-kind="spell"] { background: #fff6e2; }
+.sd-root-card[data-root-kind="origin"] { background: #f7eef7; }
+.sd-root-tag { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 2px solid var(--sd-ink); border-radius: 99px; background: #fff; font-size: 14px; font-weight: 900; white-space: nowrap; }
+.sd-root-tag i { font-size: 17px; font-style: normal; }
+.sd-root-card b { display: block; font-size: 19px; }
+.sd-root-card p { margin: 5px 0 0; font-size: 16px; font-weight: 700; line-height: 1.8; }
+.sd-root-card.is-compact { gap: 10px; padding: 12px 14px; box-shadow: 3px 4px 0 rgba(18,41,74,.14); }
+.sd-root-card.is-compact .sd-root-tag { padding: 4px 9px; font-size: 12px; }
+.sd-root-card.is-compact b { font-size: 16px; }
+.sd-root-card.is-compact p { font-size: 14px; line-height: 1.7; }
+
+/* ---------- Spelling drill ---------- */
+.sd-drill.is-wrong { animation: sd-shake .35s ease-in-out; }
+/* 特訓的標題列只有兩欄（沒有返回鍵），工具列則比線索題多一顆「清空」。 */
+.sd-drill .sd-case-head { grid-template-columns: minmax(0, 1fr) auto; }
+.sd-drill .sd-spell-tools { grid-template-columns: auto auto auto minmax(0, 1fr); }
+.sd-drill-body { display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 20px clamp(14px, 3vw, 28px) 0; }
+.sd-drill-body > .sd-root-card, .sd-drill-body > .sd-letter-bank, .sd-drill-body > .sd-spell-tools { width: min(720px, 100%); }
+.sd-drill-prompt { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 18px; width: min(720px, 100%); padding: 18px 22px; border: 3px solid var(--sd-ink); border-radius: 14px; background: #fff6d8; box-shadow: 5px 6px 0 rgba(18,41,74,.18); }
+.sd-drill-prompt small { display: block; color: var(--sd-tint); font-size: 14px; font-weight: 800; }
+.sd-drill-prompt b { display: block; margin: 2px 0 10px; font-size: clamp(30px, 4.4vw, 44px); font-weight: 900; }
+.sd-drill .sd-verdict { width: min(720px, 100%); margin: 18px auto 22px; }
+.sd-drill .sd-spell-tools { margin-bottom: 24px; }
+
 /* ---------- Deduction ---------- */
 .sd-deduction-body { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 18px; padding: 20px clamp(14px, 3vw, 28px); }
 .sd-suspects { display: flex; flex-direction: column; gap: 13px; }
@@ -197,6 +227,11 @@
 .sd-report-grid small, .sd-report-grid b { display: block; }
 .sd-report-grid small { color: #cfe0ea; font-size: 13px; }
 .sd-report-grid b { margin-top: 3px; color: var(--sd-accent); font: 800 26px Changa, sans-serif; }
+.sd-root-recap { width: min(860px, 100%); margin: 4px 0 18px; }
+.sd-root-recap h2 { margin: 0 0 12px; font-size: 21px; color: #fff3c0; }
+.sd-root-recap > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.sd-root-recap .sd-root-card { box-shadow: none; }
+.sd-report-note { margin: 0 0 18px; color: #dfe9f2; font-size: 15px; font-weight: 800; }
 .sd-report-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 20px; }
 .sd-report-actions > button:not(.sd-primary) { padding: 10px; border: 0; border-bottom: 2px solid currentColor; background: transparent; color: #fff; font-size: 16px; font-weight: 800; cursor: pointer; }
 
@@ -261,8 +296,8 @@
   .sd-slots button > span { font-size: 32px; }
   .sd-letter-bank { gap: 8px; padding: 11px 8px; }
   .sd-letter-bank button { width: 52px; height: 52px; font-size: 31px; }
-  .sd-spell-tools { grid-template-columns: 1fr 1fr; }
-  .sd-spell-tools .sd-check { grid-column: 1 / -1; }
+  .sd-spell-tools, .sd-drill .sd-spell-tools { grid-template-columns: 1fr 1fr; }
+  .sd-spell-tools .sd-hint, .sd-spell-tools .sd-check { grid-column: 1 / -1; }
   .sd-verdict { grid-template-columns: 60px minmax(0, 1fr); gap: 12px; padding: 16px 14px; }
   .sd-verdict > span { font-size: 42px; }
   .sd-verdict b { font-size: 20px; }
@@ -283,7 +318,16 @@
   .sd-verdict-box { padding: 16px 15px; }
   .sd-verdict-box p { font-size: 16px; }
   .sd-report-grid { grid-template-columns: 1fr 1fr; }
+  .sd-root-recap > div { grid-template-columns: 1fr; }
+  .sd-root-recap h2 { font-size: 18px; }
   .sd-report-actions { width: 100%; flex-direction: column; gap: 12px; }
+  .sd-drill-body { padding: 14px 12px 0; gap: 13px; }
+  .sd-drill-prompt { grid-template-columns: 56px minmax(0, 1fr); gap: 12px; padding: 14px; }
+  .sd-drill-prompt .sd-prompt-emoji { font-size: 44px; }
+  .sd-drill-prompt b { font-size: 27px; }
+  .sd-root-card { grid-template-columns: 1fr; gap: 9px; padding: 13px 14px; }
+  .sd-root-card b { font-size: 17px; }
+  .sd-root-card p { font-size: 15px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

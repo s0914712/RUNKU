@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { BEASTS, CreatureCard, speak } from './SisterCardQuest';
 import { DETECTIVE_CONFIGS } from './storyDetectiveCases';
+import { ROOT_KIND, rootOf } from './wordRoots';
 import './StoryDetectiveQuest.css';
 
 const SAVE_VERSION = 1;
 const CLUE_BASE_SCORE = 120;
 const DEDUCTION_SCORE = [250, 120, 60];
+const DRILL_BASE_SCORE = 90;
 
 function seededShuffle(items, seed) {
   const output = [...items];
@@ -67,6 +69,42 @@ function readProgress(storageKey, partner) {
 
 function scoreClue(attempts, hinted) {
   return Math.max(50, CLUE_BASE_SCORE - attempts * 25 - (hinted ? 20 : 0));
+}
+
+function scoreDrill(attempts, hinted) {
+  return Math.max(40, DRILL_BASE_SCORE - attempts * 20 - (hinted ? 15 : 0));
+}
+
+function tilesFor(word, seed) {
+  return seededShuffle(
+    [...spellingOf(word)].map((letter, position) => ({ id: `${word.id}-${position}`, letter })),
+    seed,
+  );
+}
+
+// 提示：補上從第一格算起、第一個還沒排對的字母。
+function nextHintTile(spelling, tiles, selectedIds) {
+  const letters = selectedIds.map((id) => tiles.find((tile) => tile.id === id)?.letter || '');
+  let prefix = 0;
+  while (prefix < letters.length && letters[prefix] === spelling[prefix]) prefix += 1;
+  const keep = selectedIds.slice(0, prefix);
+  const tile = tiles.find((item) => item.letter === spelling[prefix] && !keep.includes(item.id));
+  return tile ? { keep, tile, letter: spelling[prefix] } : null;
+}
+
+function RootCard({ word, compact = false }) {
+  const note = rootOf(word);
+  if (!note) return null;
+  const kind = ROOT_KIND[note.kind];
+  return (
+    <div className={`sd-root-card${compact ? ' is-compact' : ''}`} data-root-kind={note.kind}>
+      <span className="sd-root-tag"><i>{kind.emoji}</i>{kind.label}</span>
+      <div>
+        <b>{note.title}</b>
+        <p>{note.body}</p>
+      </div>
+    </div>
+  );
 }
 
 function CaseFolder({ entry, index, locked, solved, best, onOpen }) {
@@ -193,10 +231,7 @@ function CluePuzzle({ clue, index, pool, seed, attempts, hinted, feedback, selec
   const spelling = spellingOf(word);
   const isSpell = clue.kind === 'spell';
   const showsZh = clue.kind === 'choose-zh';
-  const tiles = useMemo(
-    () => seededShuffle([...spelling].map((letter, position) => ({ id: `${word.id}-${position}`, letter })), seed),
-    [spelling, word.id, seed],
-  );
+  const tiles = useMemo(() => tilesFor(word, seed), [word, seed]);
   const options = useMemo(() => (isSpell ? [] : optionsFor(pool, word, seed)), [isSpell, pool, word, seed]);
   const answer = selectedIds.map((id) => tiles.find((tile) => tile.id === id)?.letter || '').join('');
 
@@ -384,7 +419,74 @@ function Deduction({ entry, found, suspects, ruledOutBeasts, onAccuse, onScene }
   );
 }
 
-function Report({ entry, culprit, score, best, solvedCount, totalCases, unlockedCount, isNewBeast, hasNext, style, onNext, onFiles, onReplay }) {
+function SpellingDrill({ entry, index, tiles, selectedIds, feedback, attempts, hinted, score, onSelect, onRemove, onUndo, onClear, onHint, onCheck, onNext, onListen }) {
+  const word = entry.clues[index].item;
+  const spelling = spellingOf(word);
+  const answer = selectedIds.map((id) => tiles.find((tile) => tile.id === id)?.letter || '').join('');
+  const isLast = index + 1 >= entry.clues.length;
+
+  return (
+    <section className={`sd-drill${feedback === 'wrong' ? ' is-wrong' : ''}`} data-testid="story-detective-drill" data-word={word.english}>
+      <header className="sd-case-head">
+        <div><small>SPELLING DRILL · {entry.en}</small><b>結案前的拼字特訓</b></div>
+        <span>{index + 1} / {entry.clues.length}</span>
+      </header>
+
+      <div className="sd-meter"><i><span style={{ width: `${((index + 1) / entry.clues.length) * 100}%` }} /></i><b>把這一案的五個單字再拼一次</b><em>{score} 分</em></div>
+
+      <div className="sd-drill-body">
+        <div className="sd-drill-prompt">
+          <span className="sd-prompt-emoji">{word.emoji || '✦'}</span>
+          <div>
+            <small>把這個字拼出來</small>
+            <b>{word.chinese}</b>
+            <button className="sd-listen" onClick={() => onListen(word.english)}><span>🔊</span>聽發音</button>
+          </div>
+        </div>
+
+        <RootCard word={word} />
+
+        <LetterSlots spelling={spelling} tiles={tiles} selectedIds={selectedIds} onRemove={onRemove} />
+
+        <div className="sd-letter-bank" aria-label="可選擇的字母">
+          {tiles.map((tile) => (
+            <button
+              key={tile.id}
+              className={selectedIds.includes(tile.id) ? 'is-used' : ''}
+              disabled={selectedIds.includes(tile.id) || Boolean(feedback)}
+              onClick={() => onSelect(tile.id)}
+              aria-label={`${tile.letter.toUpperCase()} 字母`}
+            >{tile.letter}</button>
+          ))}
+        </div>
+
+        <div className="sd-spell-tools">
+          <button onClick={onUndo} disabled={!selectedIds.length || Boolean(feedback)}>↶ 上一步</button>
+          <button onClick={onClear} disabled={!selectedIds.length || Boolean(feedback)}>⌫ 清空</button>
+          <button className="sd-hint" onClick={() => onHint(tiles)} disabled={selectedIds.length === spelling.length || Boolean(feedback)}>💡 提示一格</button>
+          <button className="sd-check" onClick={() => onCheck(answer === spelling)} disabled={selectedIds.length !== spelling.length || Boolean(feedback)}>檢查拼字</button>
+        </div>
+      </div>
+
+      {feedback === 'wrong' && (
+        <div className="sd-verdict sd-verdict-wrong" role="status">
+          <span>✏️</span>
+          <div><small>ALMOST</small><b>再排一次看看</b><p>回頭看一眼上面的字根小教室，通常拼錯的就是那幾個字母。</p><em>已嘗試 {attempts} 次</em></div>
+        </div>
+      )}
+
+      {feedback === 'correct' && (
+        <div className="sd-verdict sd-verdict-correct" role="status">
+          <span>✅</span>
+          <div><small>SPELLED IT</small><b>{word.english.toUpperCase()}</b><p>{word.english} = {word.chinese}</p><em>+{scoreDrill(attempts, hinted)} 分</em></div>
+          <button onClick={onNext}>{isLast ? '完成特訓，看結案報告' : '下一個字'} →</button>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Report({ entry, culprit, score, drillScore, best, solvedCount, totalCases, unlockedCount, isNewBeast, hasNext, style, onNext, onFiles, onReplay }) {
   return (
     <div className="story-detective sd-report" style={style} data-testid="story-detective-report">
       <p className="sd-kicker">CASE CLOSED · {entry.en}</p>
@@ -397,10 +499,19 @@ function Report({ entry, culprit, score, best, solvedCount, totalCases, unlocked
       </div>
       <div className="sd-report-grid">
         <span><small>本案得分</small><b>{score}</b></span>
+        <span><small>拼字特訓</small><b>{drillScore}</b></span>
         <span><small>本案最高</small><b>{best}</b></span>
-        <span><small>已結案</small><b>{solvedCount}/{totalCases}</b></span>
         <span><small>星獸夥伴</small><b>{unlockedCount}/{BEASTS.length}</b></span>
       </div>
+
+      <section className="sd-root-recap" data-testid="story-detective-root-recap">
+        <h2>這一案學到的字根與構詞</h2>
+        <div>
+          {entry.clues.map((clue) => <RootCard key={clue.word} word={clue.item} compact />)}
+        </div>
+      </section>
+
+      <p className="sd-report-note">已結案 {solvedCount}/{totalCases} 件</p>
       <div className="sd-report-actions">
         {hasNext
           ? <button className="sd-primary" onClick={onNext}>接下一件委託 <span>➜</span></button>
@@ -430,10 +541,19 @@ export default function StoryDetectiveQuest({ variant, words }) {
   const [feedback, setFeedback] = useState(null);
   const [accuseCount, setAccuseCount] = useState(0);
   const [ruledOutBeasts, setRuledOutBeasts] = useState([]);
+  const [drillIndex, setDrillIndex] = useState(0);
+  const [drillScore, setDrillScore] = useState(0);
+  const [isNewBeast, setNewBeast] = useState(false);
   const [report, setReport] = useState(null);
 
   const entry = cases[caseIndex];
   const partner = beastOf(config.partner);
+  // useMemo 是 hook，必須排在下面那些提早 return 之前，順序才不會變。
+  const drillWord = entry?.clues[drillIndex]?.item;
+  const drillTiles = useMemo(
+    () => (drillWord ? tilesFor(drillWord, drillWord.id * 13 + drillIndex + 5) : []),
+    [drillWord, drillIndex],
+  );
 
   useEffect(() => {
     try {
@@ -458,6 +578,9 @@ export default function StoryDetectiveQuest({ variant, words }) {
     setScore(0);
     setAccuseCount(0);
     setRuledOutBeasts([]);
+    setDrillIndex(0);
+    setDrillScore(0);
+    setNewBeast(false);
     setReport(null);
     resetPuzzle();
     setScreen('scene');
@@ -486,15 +609,10 @@ export default function StoryDetectiveQuest({ variant, words }) {
   const hintClue = (candidates) => {
     const clue = entry.clues[openClue];
     if (clue.kind === 'spell') {
-      const spelling = spellingOf(clue.item);
-      const letters = selectedIds.map((id) => candidates.find((tile) => tile.id === id)?.letter || '');
-      let prefix = 0;
-      while (prefix < letters.length && letters[prefix] === spelling[prefix]) prefix += 1;
-      const keep = selectedIds.slice(0, prefix);
-      const next = candidates.find((tile) => tile.letter === spelling[prefix] && !keep.includes(tile.id));
-      if (!next) return;
-      setSelectedIds([...keep, next.id]);
-      speak(spelling[prefix]);
+      const hint = nextHintTile(spellingOf(clue.item), candidates, selectedIds);
+      if (!hint) return;
+      setSelectedIds([...hint.keep, hint.tile.id]);
+      speak(hint.letter);
     } else {
       const wrong = candidates.find((option) => option.id !== clue.item.id && !ruledOut.includes(option.id));
       if (!wrong) return;
@@ -518,17 +636,43 @@ export default function StoryDetectiveQuest({ variant, words }) {
       setRuledOutBeasts((current) => [...current, beastId]);
       return;
     }
-    const gained = DEDUCTION_SCORE[Math.min(accuseCount, DEDUCTION_SCORE.length - 1)];
-    const finalScore = score + gained;
-    const isNewBeast = !progress.unlocked.includes(entry.culprit);
-    setScore(finalScore);
+    // 指認正確後先進拼字特訓，把這一案的五個單字再拼一次，特訓分數併進本案成績。
+    setScore((current) => current + DEDUCTION_SCORE[Math.min(accuseCount, DEDUCTION_SCORE.length - 1)]);
+    setNewBeast(!progress.unlocked.includes(entry.culprit));
+    setDrillIndex(0);
+    setDrillScore(0);
+    resetPuzzle();
+    setScreen('drill');
+  };
+
+  const checkDrill = (correct) => {
+    if (!correct) {
+      setFeedback('wrong');
+      setAttempts((current) => current + 1);
+      setSelectedIds([]);
+      window.setTimeout(() => setFeedback(null), 1100);
+      return;
+    }
+    setDrillScore((current) => current + scoreDrill(attempts, hinted));
+    setFeedback('correct');
+    speak(entry.clues[drillIndex].item.english);
+  };
+
+  const nextDrillWord = () => {
+    if (drillIndex + 1 < entry.clues.length) {
+      setDrillIndex((current) => current + 1);
+      resetPuzzle();
+      return;
+    }
+    // drillScore 已經在 checkDrill 裡把這個字的分數加進去了，這裡不能再加一次。
+    const finalScore = score + drillScore;
     setProgress((current) => ({
       ...current,
       solved: [...new Set([...current.solved, entry.id])],
       unlocked: [...new Set([...current.unlocked, entry.culprit])],
       best: { ...current.best, [entry.id]: Math.max(current.best[entry.id] || 0, finalScore) },
     }));
-    setReport({ score: finalScore, isNewBeast });
+    setReport({ score: finalScore, drillScore, isNewBeast });
     setScreen('report');
   };
 
@@ -546,6 +690,7 @@ export default function StoryDetectiveQuest({ variant, words }) {
         entry={entry}
         culprit={beastOf(entry.culprit)}
         score={report.score}
+        drillScore={report.drillScore}
         best={progress.best[entry.id] || report.score}
         solvedCount={progress.solved.length}
         totalCases={cases.length}
@@ -564,7 +709,34 @@ export default function StoryDetectiveQuest({ variant, words }) {
 
   return (
     <div className="story-detective sd-case" style={style} data-testid="story-detective-scene" data-case={entry.id}>
-      {screen === 'deduction' ? (
+      {screen === 'drill' ? (
+        <SpellingDrill
+          entry={entry}
+          index={drillIndex}
+          tiles={drillTiles}
+          selectedIds={selectedIds}
+          feedback={feedback}
+          attempts={attempts}
+          hinted={hinted}
+          score={drillScore}
+          onSelect={(id) => setSelectedIds((current) => (
+            current.length < spellingOf(entry.clues[drillIndex].item).length ? [...current, id] : current
+          ))}
+          onRemove={(index) => setSelectedIds((current) => current.slice(0, index))}
+          onUndo={() => setSelectedIds((current) => current.slice(0, -1))}
+          onClear={() => setSelectedIds([])}
+          onHint={(tiles) => {
+            const hint = nextHintTile(spellingOf(entry.clues[drillIndex].item), tiles, selectedIds);
+            if (!hint) return;
+            setSelectedIds([...hint.keep, hint.tile.id]);
+            setHinted(true);
+            speak(hint.letter);
+          }}
+          onCheck={checkDrill}
+          onNext={nextDrillWord}
+          onListen={speak}
+        />
+      ) : screen === 'deduction' ? (
         <Deduction
           entry={entry}
           found={found}
