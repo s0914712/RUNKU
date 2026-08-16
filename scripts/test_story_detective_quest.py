@@ -52,16 +52,7 @@ def solve_open_clue(page, glossary):
     kind = puzzle.get_attribute("data-kind")
 
     if kind == "spell":
-        for letter in word.replace(" ", ""):
-            tiles = page.locator(".sd-letter-bank button:not(.is-used)")
-            clicked = False
-            for index in range(tiles.count()):
-                tile = tiles.nth(index)
-                if tile.inner_text().strip().lower() == letter:
-                    tile.click()
-                    clicked = True
-                    break
-            assert clicked, f"No unused tile for {letter!r} in {word!r}"
+        spell_with_tiles(page, word, ".sd-puzzle .sd-letter-bank")
         page.get_by_role("button", name="採集這個線索").click()
     else:
         # choose-zh shows Chinese options; every other kind shows English ones.
@@ -90,13 +81,50 @@ def solve_case(page, glossary):
     return words
 
 
+def spell_with_tiles(page, word, bank_selector):
+    for letter in word.replace(" ", ""):
+        tiles = page.locator(f"{bank_selector} button:not(.is-used)")
+        clicked = False
+        for index in range(tiles.count()):
+            tile = tiles.nth(index)
+            if tile.inner_text().strip().lower() == letter:
+                tile.click()
+                clicked = True
+                break
+        assert clicked, f"No unused tile for {letter!r} in {word!r}"
+
+
 def accuse_until_correct(page):
+    """Name suspects until the case breaks; correct deduction opens the spelling drill."""
     suspects = page.locator(".sd-suspect:not(.is-ruled-out)")
     for _ in range(3):
         suspects.first.click()
-        if page.get_by_test_id("story-detective-report").count():
+        if page.get_by_test_id("story-detective-drill").count():
             return
     raise AssertionError("None of the three suspects closed the case")
+
+
+def run_spelling_drill(page, expected_words):
+    """Spell all five case words again, checking each shows a word-root card."""
+    drill = page.get_by_test_id("story-detective-drill")
+    drill.wait_for()
+    spelled = []
+    for position in range(len(expected_words)):
+        word = drill.get_attribute("data-word").lower()
+        spelled.append(word)
+        # Every drilled word teaches a root / word-building / spelling note.
+        assert drill.locator(".sd-root-card").count() == 1, word
+        assert drill.locator(".sd-root-tag").inner_text().strip(), word
+        spell_with_tiles(page, word, ".sd-drill .sd-letter-bank")
+        page.get_by_role("button", name="檢查拼字").click()
+        page.locator(".sd-verdict-correct").wait_for()
+        assert word.upper() in page.locator(".sd-verdict-correct b").inner_text().upper()
+        last = position + 1 == len(expected_words)
+        page.get_by_role(
+            "button", name="完成特訓，看結案報告 →" if last else "下一個字 →"
+        ).click()
+    assert sorted(spelled) == sorted(expected_words), (spelled, expected_words)
+    return spelled
 
 
 def desktop_flow(browser):
@@ -138,10 +166,14 @@ def desktop_flow(browser):
     page.screenshot(path=OUTPUT / "deduction-desktop.png", full_page=True)
 
     accuse_until_correct(page)
+    page.screenshot(path=OUTPUT / "drill-desktop.png", full_page=True)
+    run_spelling_drill(page, words)
     report = page.get_by_test_id("story-detective-report")
     report.wait_for()
     assert "1/4" in report.inner_text(), report.inner_text()
     assert "2/30" in report.inner_text(), report.inner_text()
+    # The report recaps a root note for each of the five words.
+    assert page.get_by_test_id("story-detective-root-recap").locator(".sd-root-card").count() == 5
     page.screenshot(path=OUTPUT / "report-desktop.png", full_page=True)
 
     # Solving case 1 unlocks case 2, and the result survives a reload.
@@ -171,10 +203,11 @@ def sister_flow(browser):
 
     page.locator(".sd-folder:not(.is-locked)").first.click()
     page.get_by_test_id("story-detective-scene").wait_for()
-    solve_case(page, chinese_by_english("jie"))
+    sister_words = solve_case(page, chinese_by_english("jie"))
     page.get_by_test_id("story-detective-deduce").click()
     page.get_by_test_id("story-detective-deduction").wait_for()
     accuse_until_correct(page)
+    run_spelling_drill(page, sister_words)
     page.get_by_test_id("story-detective-report").wait_for()
     page.screenshot(path=OUTPUT / "report-sister-desktop.png", full_page=True)
 
@@ -211,11 +244,12 @@ def mobile_flow(browser):
     page.screenshot(path=OUTPUT / "scene-mobile.png", full_page=True)
 
     # Walk the whole case on a phone so every puzzle type gets a narrow-viewport check.
+    mobile_words = []
     for _ in range(5):
         page.locator(".sd-spots button:not(.is-found)").first.click()
         page.get_by_test_id("story-detective-puzzle").wait_for()
         assert_no_horizontal_overflow(page)
-        solve_open_clue(page, glossary)
+        mobile_words.append(solve_open_clue(page, glossary))
 
     page.screenshot(path=OUTPUT / "notebook-mobile.png", full_page=True)
     page.get_by_test_id("story-detective-deduce").click()
@@ -224,6 +258,9 @@ def mobile_flow(browser):
     page.screenshot(path=OUTPUT / "deduction-mobile.png", full_page=True)
 
     accuse_until_correct(page)
+    assert_no_horizontal_overflow(page)
+    page.screenshot(path=OUTPUT / "drill-mobile.png", full_page=True)
+    run_spelling_drill(page, mobile_words)
     page.get_by_test_id("story-detective-report").wait_for()
     assert_no_horizontal_overflow(page)
     page.screenshot(path=OUTPUT / "report-mobile.png", full_page=True)
