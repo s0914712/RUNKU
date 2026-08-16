@@ -3,7 +3,7 @@ from pathlib import Path
 
 from playwright.sync_api import expect, sync_playwright
 
-from runku_test_utils import BASE_URL, watch_errors
+from runku_test_utils import BASE_URL, assert_head_assets_resolve, watch_errors
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +37,7 @@ def run_profile(browser, profile_key, game_title, finale_title):
     console_errors = watch_errors(page)
     page.goto(f"{BASE_URL}/games")
     page.wait_for_load_state("networkidle")
+    assert_head_assets_resolve(page)
 
     page.get_by_text(game_title, exact=True).click()
     expect(page.locator(".wq-intro h1")).to_contain_text(game_title)

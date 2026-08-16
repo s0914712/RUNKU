@@ -43,6 +43,34 @@ def watch_errors(page):
     return errors
 
 
+ASSET_SUFFIXES = (".svg", ".png", ".ico", ".webp", ".jpg", ".jpeg", ".css", ".js")
+
+
+def assert_head_assets_resolve(page):
+    """Every same-origin asset the document references must really exist.
+
+    An absolute path like "/vite.svg" escapes the `/RUNKU/` base and 404s once
+    deployed. Headless browsers never request favicons, so watch_errors cannot see
+    it — only an explicit fetch catches it. A 200 alone is not proof either: the dev
+    and preview servers answer unknown paths under the base with the SPA fallback,
+    so an asset URL that comes back as HTML is also a miss.
+    """
+    refs = page.eval_on_selector_all(
+        "link[href], script[src]", "nodes => nodes.map(node => node.href || node.src)"
+    )
+    for url in refs:
+        if not url.startswith(ORIGIN):
+            continue
+        if not url.split("?")[0].lower().endswith(ASSET_SUFFIXES):
+            continue
+        response = page.request.get(url)
+        assert response.status == 200, f"{url} -> HTTP {response.status}"
+        content_type = response.headers.get("content-type", "")
+        assert "text/html" not in content_type, (
+            f"{url} -> served the SPA fallback ({content_type}), so the file is missing"
+        )
+
+
 def reset_storage(page, *keys):
     """Open the app and clear the given localStorage keys.
 

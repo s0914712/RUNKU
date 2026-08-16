@@ -3,7 +3,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from runku_test_utils import BASE_URL, reset_storage, watch_errors
+from runku_test_utils import BASE_URL, assert_head_assets_resolve, reset_storage, watch_errors
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -103,9 +103,10 @@ def desktop_flow(browser):
     context = browser.new_context(viewport={"width": 1440, "height": 1050})
     use_profile(context, "mei")
     page = context.new_page()
-    reset_storage(page, STORAGE_KEYS["mei"])
     errors = watch_errors(page)
+    reset_storage(page, STORAGE_KEYS["mei"])
     open_game(page, "mei")
+    assert_head_assets_resolve(page)
 
     files = page.get_by_test_id("story-detective-files")
     assert "0/4" in files.inner_text(), files.inner_text()
@@ -161,8 +162,8 @@ def sister_flow(browser):
     context = browser.new_context(viewport={"width": 1440, "height": 1050})
     use_profile(context, "jie")
     page = context.new_page()
-    reset_storage(page, STORAGE_KEYS["jie"])
     errors = watch_errors(page)
+    reset_storage(page, STORAGE_KEYS["jie"])
     open_game(page, "jie")
     assert "蒼藍檔案" in page.get_by_test_id("story-detective-files").inner_text()
     # The two sisters get different casebooks.
@@ -198,8 +199,8 @@ def mobile_flow(browser):
     use_profile(context, "mei")
     page = context.new_page()
     glossary = chinese_by_english("mei")
-    reset_storage(page, STORAGE_KEYS["mei"])
     errors = watch_errors(page)
+    reset_storage(page, STORAGE_KEYS["mei"])
     open_game(page, "mei")
     assert_no_horizontal_overflow(page)
     page.screenshot(path=OUTPUT / "files-mobile.png", full_page=True)

@@ -3,7 +3,7 @@ from pathlib import Path
 
 from playwright.sync_api import sync_playwright
 
-from runku_test_utils import BASE_URL, reset_storage, watch_errors
+from runku_test_utils import BASE_URL, assert_head_assets_resolve, reset_storage, watch_errors
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -40,9 +40,10 @@ def desktop_flow(browser):
     context = browser.new_context(viewport={"width": 1440, "height": 1050})
     use_profile(context, "jie")
     page = context.new_page()
-    reset_storage(page, STORAGE_KEY)
     errors = watch_errors(page)
+    reset_storage(page, STORAGE_KEY)
     open_card_game(page)
+    assert_head_assets_resolve(page)
     intro_stats = page.locator(".cq-feature-row").inner_text()
     assert "39" in intro_stats and "4/30" in intro_stats
     assert page.locator(".cq-intro-showcase img").count() == 4
@@ -139,8 +140,8 @@ def mobile_flow(browser):
     context = browser.new_context(viewport={"width": 390, "height": 844}, device_scale_factor=1)
     use_profile(context, "jie")
     page = context.new_page()
-    reset_storage(page, STORAGE_KEY)
     errors = watch_errors(page)
+    reset_storage(page, STORAGE_KEY)
     open_card_game(page)
     assert_no_overflow(page)
     page.screenshot(path=OUTPUT / "intro-mobile.png", full_page=True)
