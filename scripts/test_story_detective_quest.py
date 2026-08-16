@@ -8,7 +8,8 @@ from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "test-results" / "story-detective-quest"
-BASE_URL = os.environ.get("RUNKU_TEST_URL", "http://127.0.0.1:5173")
+# The app is served under Vite's `/RUNKU/` base, so the routes live below it.
+BASE_URL = os.environ.get("RUNKU_TEST_URL", "http://127.0.0.1:5173/RUNKU")
 ORIGIN = "{0.scheme}://{0.netloc}".format(urlsplit(BASE_URL))
 
 GAME_NAMES = {"mei": "星獸偵探社・曙光檔案", "jie": "星獸偵探社・蒼藍檔案"}
