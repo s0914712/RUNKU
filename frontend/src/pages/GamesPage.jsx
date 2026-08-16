@@ -6,7 +6,18 @@ import BodyAdventure from '../components/Games/BodyAdventure';
 import SisterAdventure from '../components/Games/SisterAdventure';
 import SisterCardQuest from '../components/Games/SisterCardQuest';
 import YoungerSpellingQuest from '../components/Games/YoungerSpellingQuest';
+import SisterDetectiveFiles from '../components/Games/SisterDetectiveFiles';
+import YoungerDetectiveFiles from '../components/Games/YoungerDetectiveFiles';
 import { useProfile } from '../context/ProfileContext';
+
+// 這些遊戲自己有完整的畫面與返回流程，不套用外層的標題與置中版面。
+const FULL_SCREEN_GAMES = [
+  'body-adventure',
+  'sister-adventure',
+  'sister-card-quest',
+  'younger-spelling-quest',
+  'story-detective',
+];
 
 export default function GamesPage() {
   const { profile } = useProfile();
@@ -60,6 +71,19 @@ export default function GamesPage() {
       featured: true,
       action: '打開故事書',
     }]),
+    {
+      id: 'story-detective',
+      name: profile.key === 'jie' ? '星獸偵探社・蒼藍檔案' : '星獸偵探社・曙光檔案',
+      englishName: profile.key === 'jie' ? 'LEXIBEAST · THE AZURE CASEBOOK' : 'LEXIBEAST · THE SUNBEAM CASEBOOK',
+      icon: '🔍',
+      description: profile.key === 'jie'
+        ? '四件委託、每件五個線索。解開單字才看得到線索，再從三位嫌疑星獸中指認出真正的答案。'
+        : '四件小案件、每件五個線索。把英文單字答對就能看到線索，最後找出是哪一隻星獸做的！',
+      component: profile.key === 'jie' ? SisterDetectiveFiles : YoungerDetectiveFiles,
+      color: 'from-slate-800 via-sky-900 to-amber-600',
+      featured: true,
+      action: '翻開案件檔案',
+    },
     {
       id: 'whackamole',
       name: '單字打地鼠',
@@ -155,7 +179,7 @@ export default function GamesPage() {
     );
   }
 
-  if (['body-adventure', 'sister-adventure', 'sister-card-quest', 'younger-spelling-quest'].includes(selectedGame.id)) {
+  if (FULL_SCREEN_GAMES.includes(selectedGame.id)) {
     return (
       <div className="space-y-4">
         <button
