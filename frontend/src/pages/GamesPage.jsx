@@ -8,6 +8,7 @@ import SisterCardQuest from '../components/Games/SisterCardQuest';
 import YoungerSpellingQuest from '../components/Games/YoungerSpellingQuest';
 import SisterDetectiveFiles from '../components/Games/SisterDetectiveFiles';
 import YoungerDetectiveFiles from '../components/Games/YoungerDetectiveFiles';
+import ScaleSchool from '../components/Games/ScaleSchool';
 import { useProfile } from '../context/ProfileContext';
 
 // 這些遊戲自己有完整的畫面與返回流程，不套用外層的標題與置中版面。
@@ -17,6 +18,7 @@ const FULL_SCREEN_GAMES = [
   'sister-card-quest',
   'younger-spelling-quest',
   'story-detective',
+  'scale-school',
 ];
 
 export default function GamesPage() {
@@ -84,6 +86,17 @@ export default function GamesPage() {
       featured: true,
       action: '翻開案件檔案',
     },
+    ...(profile.key === 'mei' ? [{
+      id: 'scale-school',
+      name: '星獸音階教室',
+      englishName: 'SCALE SCHOOL · MAJOR & MINOR',
+      icon: '🎻',
+      description: '用鍵盤按出大調與小調音階，下面同步告訴你這個音在小提琴的哪一條弦、第幾指。全部排在第一把位裡。',
+      component: ScaleSchool,
+      color: 'from-indigo-800 via-teal-700 to-amber-500',
+      featured: true,
+      action: '打開音階教室',
+    }] : []),
     {
       id: 'whackamole',
       name: '單字打地鼠',
