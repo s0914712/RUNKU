@@ -9,6 +9,7 @@ import YoungerSpellingQuest from '../components/Games/YoungerSpellingQuest';
 import SisterDetectiveFiles from '../components/Games/SisterDetectiveFiles';
 import YoungerDetectiveFiles from '../components/Games/YoungerDetectiveFiles';
 import ScaleSchool from '../components/Games/ScaleSchool';
+import RhythmTaiko from '../components/Games/RhythmTaiko';
 import { useProfile } from '../context/ProfileContext';
 
 // 這些遊戲自己有完整的畫面與返回流程，不套用外層的標題與置中版面。
@@ -19,6 +20,7 @@ const FULL_SCREEN_GAMES = [
   'younger-spelling-quest',
   'story-detective',
   'scale-school',
+  'rhythm-taiko',
 ];
 
 export default function GamesPage() {
@@ -97,6 +99,17 @@ export default function GamesPage() {
       featured: true,
       action: '打開音階教室',
     }] : []),
+    {
+      id: 'rhythm-taiko',
+      name: '小小節奏達人',
+      englishName: 'RUNKU RHYTHM DOJO · 6/8',
+      icon: '🥁',
+      description: '參考 6/8 節奏練習做成兒童節奏遊戲：音符往判定圈移動，用鍵盤打「咚／咔」，還能叫出 repo 裡的小狐狸、小鹿與小龍陪練。',
+      component: RhythmTaiko,
+      color: 'from-rose-600 via-amber-500 to-sky-600',
+      featured: true,
+      action: '進入節奏道場',
+    },
     {
       id: 'whackamole',
       name: '單字打地鼠',
