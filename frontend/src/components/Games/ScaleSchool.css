@@ -158,11 +158,13 @@
   .ss-play-head > div { grid-column: 1 / -1; grid-row: 2; text-align: left; }
   .ss-play-head b { font-size: 19px; }
   .ss-play-head > span { grid-column: 2; grid-row: 1; }
-  /* 手機上把水平內距壓到最小，全部讓給八個白鍵的寬度。 */
-  .ss-play-body, .ss-lesson-body, .ss-ear-body { padding: 14px 6px 22px; gap: 13px; }
-  .ss-keyboard { padding: 6px; }
+  /* 一個八度固定是八個白鍵，手機上每一分寬度都要留給它們：
+     遊戲框在這裡改成滿版，連 app 外層的左右留白也讓出來，白鍵才到得了 44px 的觸控標準。 */
+  .scale-school { margin-inline: -16px; border-left-width: 0; border-right-width: 0; border-radius: 0; }
+  .ss-play-body, .ss-lesson-body, .ss-ear-body { padding: 14px 4px 22px; gap: 13px; }
+  .ss-keyboard { padding: 5px; }
   .ss-keys-white { gap: 3px; }
-  .ss-keys-black { inset: 6px 6px auto 6px; }
+  .ss-keys-black { inset: 5px 5px auto 5px; }
   .ss-brief { grid-template-columns: 1fr; }
   .ss-brief-tools { justify-content: stretch; }
   .ss-brief-tools button { flex: 1; }

@@ -183,13 +183,12 @@ def mobile_flow(browser):
     page.locator('.ss-level[data-level="major-D"]').click()
     page.get_by_test_id("scale-school-build").wait_for()
     assert_no_horizontal_overflow(page)
-    # 一個八度固定是八個白鍵，390px 的手機上塞完大約 37px 寬。
-    # 比一般 44px 的觸控建議窄，但琴鍵高 150px，觸控面積夠，
-    # 而且看得到整個八度對「看出音階的規律」比較重要。按錯也不會失敗。
+    # 一個八度固定是八個白鍵。手機上遊戲框改成滿版，把 app 外層的左右留白也讓給鍵盤，
+    # 390px 的螢幕上白鍵才有 43px——接近 44px 的觸控標準，而且整個八度都看得到、不用捲動。
     box = page.locator(".ss-key-white").first.evaluate(
         "element => { const r = element.getBoundingClientRect(); return { w: r.width, h: r.height }; }"
     )
-    assert box["w"] >= 36, box
+    assert box["w"] >= 42, box
     assert box["h"] >= 140, box
     assert page.locator(".ss-key-white").count() == 8
     page.screenshot(path=OUTPUT / "build-mobile.png", full_page=True)
@@ -204,6 +203,23 @@ def mobile_flow(browser):
     context.close()
 
 
+def small_phone_layout(browser):
+    """The narrowest phones still have to fit a whole octave without scrolling."""
+    context = browser.new_context(viewport={"width": 360, "height": 780})
+    use_profile(context, "mei")
+    page = context.new_page()
+    reset_storage(page, STORAGE_KEY)
+    seed_cleared(page, ["lesson-steps"])
+    open_game(page)
+    page.locator('.ss-level[data-level="major-D"]').click()
+    page.get_by_test_id("scale-school-build").wait_for()
+    assert_no_horizontal_overflow(page)
+    assert page.locator(".ss-key-white").count() == 8
+    width = page.locator(".ss-key-white").first.evaluate("element => element.getBoundingClientRect().width")
+    assert width >= 38, width
+    context.close()
+
+
 def main():
     OUTPUT.mkdir(parents=True, exist_ok=True)
     with sync_playwright() as playwright:
@@ -212,6 +228,7 @@ def main():
         ear_flow(browser)
         sister_scope(browser)
         mobile_flow(browser)
+        small_phone_layout(browser)
         browser.close()
     print("Scale school: lesson, scale building, wrong-note feedback, fingerboard, ear training, unlocks, persistence, profile scope, and mobile layout passed.")
 
