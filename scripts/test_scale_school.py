@@ -8,13 +8,25 @@ from runku_test_utils import BASE_URL, assert_head_assets_resolve, reset_storage
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "test-results" / "scale-school"
-STORAGE_KEY = "runku_scale_school_mei_v1"
+STORAGE_KEY = "runku_scale_school_mei_v2"
 GAME_NAME = "星獸音階教室"
 
-# D 大調從 D4 出發：D E F♯ G A B C♯ D。這裡用 MIDI 音高獨立寫死，
-# 和 musicTheory.js 的算法互相對照——兩邊都對才算對。
-D_MAJOR_MIDI = [62, 64, 66, 67, 69, 71, 73, 74]
+# 這些 MIDI 音高是獨立寫死的，和 musicTheory.js 的算法互相對照——兩邊都對才算對。
+#
+# D 大調從 D4 出發，上行 D E F♯ G A B C♯ D，下行原路折返（最高音不重按）。
+D_MAJOR_UP = [62, 64, 66, 67, 69, 71, 73, 74]
+D_MAJOR_DOWN = [73, 71, 69, 67, 66, 64, 62]
+D_MAJOR_RUN = D_MAJOR_UP + D_MAJOR_DOWN
 D_MAJOR_NAMES = ["D", "E", "F♯", "G", "A", "B", "C♯", "D"]
+
+# A 旋律小音階：上行升第六、七音（F♯ G♯），下行還原（G F）。
+# 這一組是這次修改的重點——同一關裡上行和下行必須是不同的音。
+A_MELODIC_UP = [57, 59, 60, 62, 64, 66, 68, 69]      # A B C D E F♯ G♯ A
+A_MELODIC_DOWN = [67, 65, 64, 62, 60, 59, 57]        # G F E D C B A
+A_MELODIC_RUN = A_MELODIC_UP + A_MELODIC_DOWN
+# 上行第七音是 G♯(68)、下行對應的是 G(67)——不同的鍵。
+assert 68 in A_MELODIC_UP and 68 not in A_MELODIC_DOWN
+assert 67 in A_MELODIC_DOWN and 67 not in A_MELODIC_UP
 
 
 def use_profile(context, profile):
@@ -32,7 +44,7 @@ def open_game(page):
 
 def seed_cleared(page, level_ids):
     page.evaluate(
-        "([key, ids]) => localStorage.setItem(key, JSON.stringify({ version: 1, cleared: ids, best: {} }))",
+        "([key, ids]) => localStorage.setItem(key, JSON.stringify({ version: 2, cleared: ids, best: {} }))",
         [STORAGE_KEY, level_ids],
     )
 
@@ -75,7 +87,10 @@ def build_d_major(page):
     page.locator(".ss-verdict.is-wrong").wait_for()
     assert build.get_attribute("data-progress") == "0"
 
-    for step, midi in enumerate(D_MAJOR_MIDI):
+    for step, midi in enumerate(D_MAJOR_RUN):
+        # 走到第 9 個音時應該已經切換成下行。
+        expected = "⬆ 上行" if step < len(D_MAJOR_UP) else "⬇ 下行"
+        assert expected in page.get_by_test_id("scale-direction").inner_text(), (step, expected)
         press(page, midi)
         assert build.get_attribute("data-progress") == str(step + 1), (step, midi)
 
@@ -85,6 +100,82 @@ def build_d_major(page):
     for name in D_MAJOR_NAMES:
         assert name in shown, (name, shown)
     return done
+
+
+def melodic_minor_flow(browser):
+    """旋律小音階是這次修改的核心：同一關的上行和下行必須走不同的音。"""
+    context = browser.new_context(viewport={"width": 1440, "height": 1050})
+    use_profile(context, "mei")
+    page = context.new_page()
+    errors = watch_errors(page)
+    reset_storage(page, STORAGE_KEY)
+    seed_cleared(page, [
+        "lesson-steps", "major-D", "major-G", "major-A", "major-C", "natural-A",
+        "ear-1", "lesson-melodic",
+    ])
+    open_game(page)
+
+    page.locator('.ss-level[data-level="melodic-A"]').click()
+    build = page.get_by_test_id("scale-school-build")
+    build.wait_for()
+    page.screenshot(path=OUTPUT / "melodic-desktop.png", full_page=True)
+
+    # 上行走到升七音 G♯(68)
+    for midi in A_MELODIC_UP:
+        press(page, midi)
+    assert build.get_attribute("data-progress") == "8"
+    assert "⬇ 下行" in page.get_by_test_id("scale-direction").inner_text()
+
+    # 下行如果照上行原路折返（G♯）就是錯的，必須按還原的 G
+    press(page, 68)
+    page.locator(".ss-verdict.is-wrong").wait_for()
+    assert build.get_attribute("data-progress") == "8", "下行按 G♯ 不該被接受"
+
+    for midi in A_MELODIC_DOWN:
+        press(page, midi)
+
+    done = page.get_by_test_id("scale-build-done")
+    done.wait_for()
+    shown = done.inner_text()
+    assert "G♯" in shown and "F♯" in shown, shown       # 上行那一列
+    assert "A G F E D C B A" in shown.replace("⬇ ", ""), shown  # 下行還原
+    page.screenshot(path=OUTPUT / "melodic-done-desktop.png", full_page=True)
+
+    assert errors == [], errors
+    context.close()
+
+
+def fingerboard_flow(browser):
+    """指板要用三條貼紙講話，而不是抽象的圓點。"""
+    context = browser.new_context(viewport={"width": 1440, "height": 1050})
+    use_profile(context, "mei")
+    page = context.new_page()
+    errors = watch_errors(page)
+    reset_storage(page, STORAGE_KEY)
+    seed_cleared(page, [
+        "lesson-steps", "major-D", "major-G", "major-A", "major-C", "natural-A",
+        "ear-1", "lesson-melodic", "melodic-A", "natural-E", "melodic-E", "natural-D",
+    ])
+    open_game(page)
+    page.locator('.ss-level[data-level="melodic-D"]').click()
+    page.get_by_test_id("scale-school-build").wait_for()
+
+    hint = page.get_by_test_id("scale-finger-hint")
+    # 每條弦只有三條貼紙，不再是八個圓點
+    assert page.locator(".ss-string").first.locator(".ss-tape").count() == 3
+
+    press(page, 62)   # D 空弦
+    assert "空弦" in hint.inner_text(), hint.inner_text()
+    press(page, 64)   # E = D 弦貼紙①
+    assert "貼紙①" in hint.inner_text(), hint.inner_text()
+    press(page, 65)   # F = 低二指，老師特別問的「靠著」
+    text = hint.inner_text()
+    assert "靠著一指" in text, text
+    assert page.locator(".ss-finger.is-ghost").count() == 1, "應該把一指也畫出來，才看得出兩指相靠"
+    page.screenshot(path=OUTPUT / "fingerboard-touching.png", full_page=True)
+
+    assert errors == [], errors
+    context.close()
 
 
 def desktop_flow(browser):
@@ -97,9 +188,9 @@ def desktop_flow(browser):
     assert_head_assets_resolve(page)
 
     the_map = page.get_by_test_id("scale-school-map")
-    assert "0/20" in the_map.inner_text(), the_map.inner_text()
+    assert "0/25" in the_map.inner_text(), the_map.inner_text()
     # Only the opening lesson is unlocked to begin with.
-    assert page.locator(".ss-level.is-locked").count() == 19
+    assert page.locator(".ss-level.is-locked").count() == 24
     page.screenshot(path=OUTPUT / "map-desktop.png", full_page=True)
 
     page.locator(".ss-level:not(.is-locked)").first.click()
@@ -108,9 +199,9 @@ def desktop_flow(browser):
 
     build_d_major(page)
 
-    # 指板要指出最後一個音在小提琴上的位置：D5 是 A 弦三指。
+    # 加上下行之後，最後一個音是回到主音 D4——也就是 D 弦的空弦。
     fingerboard = page.get_by_test_id("scale-fingerboard").inner_text()
-    assert "A 弦" in fingerboard and "三指" in fingerboard, fingerboard
+    assert "D 弦" in fingerboard and "空弦" in fingerboard, fingerboard
     page.screenshot(path=OUTPUT / "done-desktop.png", full_page=True)
 
     page.get_by_role("button", name="完成這一關 →").click()
@@ -153,7 +244,8 @@ def ear_flow(browser):
         assert "大調" in verdict.inner_text() or "小調" in verdict.inner_text()
         page.get_by_role("button", name="看成績 →" if question == 4 else "下一題 →").click()
 
-    page.get_by_test_id("scale-school-build").wait_for()
+    # 聽辨關之後接的是旋律小音階的教學關，不是按音階關。
+    page.get_by_test_id("scale-school-melodic-lesson").wait_for()
     assert errors == [], errors
     context.close()
 
@@ -193,7 +285,7 @@ def mobile_flow(browser):
     assert page.locator(".ss-key-white").count() == 8
     page.screenshot(path=OUTPUT / "build-mobile.png", full_page=True)
 
-    for midi in D_MAJOR_MIDI:
+    for midi in D_MAJOR_RUN:
         press(page, midi)
     page.get_by_test_id("scale-build-done").wait_for()
     assert_no_horizontal_overflow(page)
@@ -225,12 +317,14 @@ def main():
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         desktop_flow(browser)
+        melodic_minor_flow(browser)
+        fingerboard_flow(browser)
         ear_flow(browser)
         sister_scope(browser)
         mobile_flow(browser)
         small_phone_layout(browser)
         browser.close()
-    print("Scale school: lesson, scale building, wrong-note feedback, fingerboard, ear training, unlocks, persistence, profile scope, and mobile layout passed.")
+    print("Scale school: lesson, ascending+descending runs, melodic minor differing both ways, three-tape fingerboard, ear training, unlocks, persistence, profile scope, and mobile layout passed.")
 
 
 if __name__ == "__main__":

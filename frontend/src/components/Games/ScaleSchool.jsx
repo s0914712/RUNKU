@@ -3,16 +3,21 @@ import {
   LEVELS,
   SCALE_MODES,
   OPEN_STRINGS,
+  TAPE_OFFSETS,
+  TAPE_MARK,
   isBlackKey,
   noteNameOf,
   spellScale,
+  scaleRun,
+  descendingFormula,
   violinPosition,
   midiOf,
 } from './musicTheory';
 import { playNote, playSequence, stopAll } from './scaleAudio';
 import './ScaleSchool.css';
 
-const SAVE_VERSION = 1;
+// v2：拿掉和聲小調、加入旋律小音階，關卡 id 全變了，舊存檔的進度已無對應關卡。
+const SAVE_VERSION = 2;
 const STORAGE_KEY = `runku_scale_school_mei_v${SAVE_VERSION}`;
 const EAR_QUESTIONS = 5;
 
@@ -99,42 +104,76 @@ function Keyboard({ fromMidi, scale, pressedCount, wrongMidi, hintMidi, onPress,
 
 /* ---------------- 小提琴指板 ---------------- */
 
+// 畫成和芊芊的琴一樣：第一把位只有三條貼紙。
+// 位置沿弦按半音數等距擺，所以貼紙②③本來就靠在一起這件事看得出來。
 function Fingerboard({ midi }) {
   const position = midi == null ? null : violinPosition(midi);
+  const percentOf = (offset) => (offset / 7) * 100;
+
   return (
     <div className="ss-fingerboard" data-testid="scale-fingerboard">
-      <header><small>VIOLIN · 第一把位</small><b>{position ? `${position.string} 弦 · ${position.finger}` : '在小提琴上的位置'}</b></header>
+      <header>
+        <small>VIOLIN · 第一把位</small>
+        <b>{position ? `${position.string} 弦 · ${position.finger}` : '在小提琴上的位置'}</b>
+      </header>
+
       <div className="ss-strings">
-        {OPEN_STRINGS.map((string, index) => (
-          <div key={string.name} className={`ss-string${position?.stringIndex === index ? ' is-active' : ''}`}>
-            <span className="ss-string-name">{string.name}</span>
-            <div className="ss-string-line">
-              {[0, 1, 2, 3, 4, 5, 6, 7].map((offset) => {
-                const active = position?.stringIndex === index && position.offset === offset;
-                return (
-                  <i key={offset} className={`ss-dot${active ? ' is-active' : ''}${offset === 0 ? ' is-open' : ''}`}>
-                    {active ? position.short : ''}
-                  </i>
-                );
-              })}
+        {OPEN_STRINGS.map((string, index) => {
+          const active = position?.stringIndex === index;
+          return (
+            <div key={string.name} className={`ss-string${active ? ' is-active' : ''}`}>
+              <span className="ss-string-name">{string.name}</span>
+              <div className="ss-string-line">
+                {TAPE_OFFSETS.map((offset, tapeIndex) => (
+                  <i
+                    key={offset}
+                    className={`ss-tape${active && position.tape === tapeIndex + 1 ? ' is-active' : ''}`}
+                    style={{ left: `${percentOf(offset)}%` }}
+                  >{TAPE_MARK[tapeIndex]}</i>
+                ))}
+
+                {/* 低二指的時候把一指也畫出來，並且用一條連結把兩指框起來——
+                    真實的琴上這兩指是貼著的，但半音在圖上有距離，不畫連結會看起來像分開的。 */}
+                {active && position.touching && (
+                  <>
+                    <i
+                      className="ss-touch-link"
+                      style={{ left: `${percentOf(2)}%`, width: `${percentOf(position.offset) - percentOf(2)}%` }}
+                    />
+                    <i className="ss-finger is-ghost" style={{ left: `${percentOf(2)}%` }}>1</i>
+                  </>
+                )}
+                {active && position.offset > 0 && (
+                  <i
+                    className={`ss-finger${position.touching ? ' is-touching' : ''}${position.tape ? '' : ' is-off-tape'}`}
+                    style={{ left: `${percentOf(position.offset)}%` }}
+                  >{position.short}</i>
+                )}
+                {active && position.offset === 0 && <i className="ss-open-tag">空弦</i>}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-      <p>{position ? `按 ${position.string} 弦的${position.finger}` : '按下鍵盤上的音，這裡會顯示小提琴上的位置'}</p>
+
+      <p className="ss-fingerboard-hint" data-testid="scale-finger-hint">
+        {position
+          ? <>{position.touching && <b className="ss-touch-badge">🤝 靠著{position.touching}</b>}{position.hint}</>
+          : '按下鍵盤上的音，這裡會告訴你按哪一條弦、哪一條貼紙'}
+      </p>
     </div>
   );
 }
 
 /* ---------------- 公式列 ---------------- */
 
-function FormulaRow({ mode, pressedCount }) {
+function FormulaRow({ steps, activeIndex = -1 }) {
   return (
     <div className="ss-formula" aria-label="音階公式">
-      {SCALE_MODES[mode].formula.map((step, index) => (
+      {steps.map((step, index) => (
         <span
           key={index}
-          className={index < pressedCount - 1 ? 'is-done' : index === pressedCount - 1 ? 'is-next' : ''}
+          className={index < activeIndex ? 'is-done' : index === activeIndex ? 'is-next' : ''}
         >{step}</span>
       ))}
     </div>
@@ -151,13 +190,14 @@ function LevelMap({ progress, onOpen }) {
         <p className="ss-kicker">SCALE SCHOOL · 妹妹專屬</p>
         <h1>星獸音階教室<br /><em>大調與小調</em></h1>
         <p className="ss-lead">
-          用鍵盤按出音階，下面同時告訴你這個音在小提琴的哪一條弦、第幾指。
-          全部 17 個音階都排在第一把位裡，和你的小提琴課接得上。
+          用鍵盤按出音階（上行再下行），下面同時告訴你這個音在小提琴的哪一條弦、按哪一條貼紙。
+          全部 21 個音階都排在第一把位裡，🎻 標記的是你琴課上會拉到的。
         </p>
         <div className="ss-progress-row">
           <span><small>已完成</small><b>{clearedCount}/{LEVELS.length}</b></span>
           <span><small>大調</small><b>7</b></span>
-          <span><small>小調</small><b>10</b></span>
+          <span><small>小調</small><b>14</b></span>
+          <span><small>🎻 琴課範圍</small><b>{LEVELS.filter((level) => level.violinCourse).length}</b></span>
         </div>
       </header>
 
@@ -175,7 +215,7 @@ function LevelMap({ progress, onOpen }) {
               >
                 <span className="ss-level-no">{locked ? '🔒' : cleared ? '✓' : index + 1}</span>
                 <div>
-                  <b>{level.name}</b>
+                  <b>{level.name}{level.violinCourse && <span className="ss-violin-badge" title="琴課會拉到">🎻</span>}</b>
                   <small>{level.en}</small>
                   <p>{level.note}</p>
                 </div>
@@ -212,7 +252,7 @@ const LESSON_STEPS = [
   },
 ];
 
-function Lesson({ onDone, onHome }) {
+function StepsLesson({ onDone, onHome }) {
   const [step, setStep] = useState(0);
   const [wrongMidi, setWrongMidi] = useState(null);
   const [solved, setSolved] = useState(false);
@@ -273,8 +313,8 @@ function Lesson({ onDone, onHome }) {
         ) : (
           <>
             <div className="ss-formula-demo">
-              <div><b>大調</b><FormulaRow mode="major" pressedCount={0} /></div>
-              <div><b>自然小調</b><FormulaRow mode="natural" pressedCount={0} /></div>
+              <div><b>大調</b><FormulaRow steps={SCALE_MODES.major.formula} /></div>
+              <div><b>小調</b><FormulaRow steps={SCALE_MODES.natural.formula} /></div>
             </div>
             <button className="ss-primary" onClick={next}>我懂了，開始按音階 <span>➜</span></button>
           </>
@@ -284,10 +324,78 @@ function Lesson({ onDone, onHome }) {
   );
 }
 
+/* ---------------- 旋律小音階教學 ---------------- */
+
+// 這一關是整個修改的重點：讓她親耳聽出「上去」和「下來」用的不是同一組音。
+function MelodicLesson({ level, onDone, onHome }) {
+  const [step, setStep] = useState(0);
+  const natural = useMemo(() => scaleRun('A', 3, 'natural'), []);
+  const melodic = useMemo(() => scaleRun('A', 3, 'melodic'), []);
+
+  const pages = [
+    {
+      title: '先聽自然小調',
+      body: 'A 自然小調上去和下來是同一組音：A B C D E F G A。聽起來柔柔的、有點憂傷。',
+      play: () => playSequence(natural.notes.map((note) => note.midi), { gap: 0.34, duration: 0.32 }),
+      label: '🔊 聽 A 自然小調（上行＋下行）',
+      notes: natural,
+    },
+    {
+      title: '旋律小音階：上行升第六、七音',
+      body: '往上走的時候，第六音 F 升成 F♯、第七音 G 升成 G♯。上半段聽起來忽然亮了起來，很像大調。',
+      play: () => playSequence(melodic.up.map((note) => note.midi), { gap: 0.36, duration: 0.34 }),
+      label: '🔊 聽上行 A B C D E F♯ G♯ A',
+      notes: null,
+    },
+    {
+      title: '下行再還原回來',
+      body: '往下走的時候，G♯ 和 F♯ 又變回 G 和 F——所以下行其實就是自然小調。這就是為什麼這一關要上行下行各按一次。',
+      play: () => playSequence([melodic.up.at(-1), ...melodic.down].map((note) => note.midi), { gap: 0.36, duration: 0.34 }),
+      label: '🔊 聽下行 A G F E D C B A',
+      notes: null,
+    },
+  ];
+  const page = pages[step];
+
+  return (
+    <div className="scale-school ss-play" data-testid="scale-school-melodic-lesson">
+      <header className="ss-play-head">
+        <button onClick={onHome}>← 音階地圖</button>
+        <div><small>{level.en}</small><b>{page.title}</b></div>
+        <span>{step + 1} / {pages.length}</span>
+      </header>
+
+      <div className="ss-lesson-body">
+        <p className="ss-lesson-text">{page.body}</p>
+
+        <div className="ss-compare">
+          <div>
+            <b>上行</b>
+            <span className="ss-compare-notes">{melodic.up.map((note) => note.name).join(' ')}</span>
+          </div>
+          <div>
+            <b>下行</b>
+            <span className="ss-compare-notes">{[melodic.up.at(-1), ...melodic.down].map((note) => note.name).join(' ')}</span>
+          </div>
+        </div>
+
+        <button className="ss-listen-big" onClick={page.play}>
+          <span>🔊</span><b>{page.label.replace('🔊 ', '')}</b><small>LISTEN</small>
+        </button>
+
+        <button className="ss-primary" onClick={() => (step + 1 >= pages.length ? onDone() : setStep((value) => value + 1))}>
+          {step + 1 >= pages.length ? '開始按旋律小音階' : '下一步'} <span>➜</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ---------------- 按音階關 ---------------- */
 
 function Build({ level, onClear, onHome }) {
-  const scale = useMemo(() => spellScale(level.letter, level.octave, level.mode), [level]);
+  const run = useMemo(() => scaleRun(level.letter, level.octave, level.mode), [level]);
+  const scale = run.notes;
   const [pressed, setPressed] = useState(0);
   const [wrongMidi, setWrongMidi] = useState(null);
   const [mistakes, setMistakes] = useState(0);
@@ -304,6 +412,14 @@ function Build({ level, onClear, onHome }) {
 
   const done = pressed >= scale.length;
   const nextNote = done ? null : scale[pressed];
+  // notes[0..7] 是上行，notes[8..14] 是下行。旋律小調在這裡真的會走到不同的音。
+  const goingUp = pressed < run.up.length;
+  const upSteps = SCALE_MODES[level.mode].formula;
+  const downSteps = descendingFormula(level.mode);
+  const steps = goingUp ? upSteps : downSteps;
+  const stepIndex = goingUp ? pressed - 1 : pressed - run.up.length;
+  const stepLabel = steps[stepIndex];
+  const differentWayDown = SCALE_MODES[level.mode].descending != null;
 
   const press = (midi) => {
     playNote(midi);
@@ -325,14 +441,14 @@ function Build({ level, onClear, onHome }) {
       <header className="ss-play-head">
         <button onClick={onHome}>← 音階地圖</button>
         <div><small>{level.en}</small><b>{level.name}</b></div>
-        <span>{pressed} / {scale.length}</span>
+        <span data-testid="scale-direction">{done ? '完成' : goingUp ? '⬆ 上行' : '⬇ 下行'} {pressed}/{scale.length}</span>
       </header>
 
       <div className="ss-play-body">
         <div className="ss-brief">
           <p>{level.note}</p>
           <div className="ss-brief-tools">
-            <button onClick={() => playSequence(scale.map((note) => note.midi))}>🔊 先聽一次</button>
+            <button onClick={() => playSequence(scale.map((note) => note.midi), { gap: 0.34, duration: 0.32 })}>🔊 先聽一次（上下行）</button>
             <button className={hintOn ? 'is-on' : ''} onClick={() => setHintOn((value) => !value)}>
               💡 提示{hintOn ? '（開）' : ''}
             </button>
@@ -340,13 +456,23 @@ function Build({ level, onClear, onHome }) {
         </div>
 
         <div className="ss-target">
-          <small>{SCALE_MODES[level.mode].label}的公式</small>
-          <FormulaRow mode={level.mode} pressedCount={pressed} />
-          <em>{SCALE_MODES[level.mode].mood}</em>
+          <small>{SCALE_MODES[level.mode].label}・{goingUp ? '上行' : '下行'}的公式</small>
+          <FormulaRow steps={steps} activeIndex={stepIndex} />
+          <em>
+            {differentWayDown
+              ? goingUp ? '上行把第六、七音升高' : '下行把第六、七音還原回來——所以和上行不一樣'
+              : SCALE_MODES[level.mode].mood}
+          </em>
         </div>
 
         <p className="ss-task" data-testid="scale-next-note">
-          {done ? '🎉 整個音階按完了！' : <>🎯 第 {pressed + 1} 個音{pressed > 0 ? <>：往上走 <b>{SCALE_MODES[level.mode].formula[pressed - 1]}音</b></> : '：從主音開始'}</>}
+          {done
+            ? '🎉 上行下行都按完了！'
+            : pressed === 0
+              ? '🎯 第 1 個音：從主音開始往上'
+              : pressed === run.up.length
+                ? <>🔄 到頂了，換<b>下行</b>：從最高音往下走 <b>{stepLabel}音</b></>
+                : <>🎯 第 {pressed + 1} 個音：往{goingUp ? '上' : '下'}走 <b>{stepLabel}音</b></>}
         </p>
 
         <Keyboard
@@ -360,9 +486,15 @@ function Build({ level, onClear, onHome }) {
         />
 
         <div className="ss-note-strip" aria-label="已按出的音">
-          {scale.map((note, index) => (
-            <span key={note.degree} className={index < pressed ? 'is-done' : ''}>{index < pressed ? note.name : '?'}</span>
+          <b className="ss-strip-label">⬆</b>
+          {run.up.map((note, index) => (
+            <span key={`up-${index}`} className={index < pressed ? 'is-done' : ''}>{index < pressed ? note.name : '?'}</span>
           ))}
+          <b className="ss-strip-label">⬇</b>
+          {run.down.map((note, index) => {
+            const at = run.up.length + index;
+            return <span key={`down-${index}`} className={at < pressed ? 'is-done' : ''}>{at < pressed ? note.name : '?'}</span>;
+          })}
         </div>
 
         <Fingerboard midi={done ? scale[scale.length - 1].midi : lastMidi} />
@@ -373,7 +505,7 @@ function Build({ level, onClear, onHome }) {
           <span>🎧</span>
           <div>
             <b>這個音不在 {level.name} 裡</b>
-            <p>看一下公式：這一步要走「{SCALE_MODES[level.mode].formula[pressed - 1] || '主音'}」。按錯不會失敗，可以打開提示。</p>
+            <p>看一下公式：這一步要往{goingUp ? '上' : '下'}走「{stepLabel || '主音'}」。按錯不會失敗，可以打開提示。</p>
           </div>
         </div>
       )}
@@ -383,7 +515,8 @@ function Build({ level, onClear, onHome }) {
           <span>🎻</span>
           <div>
             <b>{level.name} 完成！</b>
-            <p>{scale.map((note) => note.name).join(' ')}</p>
+            <p>⬆ {run.up.map((note) => note.name).join(' ')}</p>
+            <p>⬇ {[run.up.at(-1), ...run.down].map((note) => note.name).join(' ')}</p>
             <em>按錯 {mistakes} 次・得 {score} 分</em>
           </div>
           <button onClick={() => playSequence(scale.map((note) => note.midi))}>🔊 再聽一次</button>
@@ -526,7 +659,11 @@ export default function ScaleSchool() {
   };
 
   if (screen === 'map') return <LevelMap progress={progress} onOpen={openLevel} />;
-  if (screen === 'lesson') return <Lesson onDone={() => clearLevel(100)} onHome={home} />;
+  if (screen === 'lesson') {
+    return level.lesson === 'melodic'
+      ? <MelodicLesson level={level} onDone={() => clearLevel(100)} onHome={home} />
+      : <StepsLesson onDone={() => clearLevel(100)} onHome={home} />;
+  }
   if (screen === 'ear') return <Ear level={level} onClear={clearLevel} onHome={home} />;
   return <Build level={level} onClear={clearLevel} onHome={home} />;
 }
