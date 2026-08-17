@@ -337,3 +337,9 @@
     transition-duration: .01ms !important;
   }
 }
+
+/* 大人用的解鎖開關：低調地待在右下角，不搶小朋友的注意力。
+   打開之後改成明顯的樣式，免得過一陣子忘記為什麼每一關都開著。 */
+.story-detective .sd-open-all { position: absolute; right: 10px; bottom: 8px; z-index: 5; padding: 5px 10px; border: 1px solid rgba(120,130,150,.4); border-radius: 99px; background: transparent; color: rgba(120,130,150,.75); font-size: 11px; font-weight: 700; cursor: pointer; }
+.story-detective .sd-open-all:hover { border-color: var(--sd-ink); color: var(--sd-ink); }
+.story-detective .sd-open-all.is-on { border-color: var(--sd-ink); background: var(--sd-ink); color: #fff8e3; }

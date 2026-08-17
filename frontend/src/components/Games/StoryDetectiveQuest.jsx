@@ -59,12 +59,13 @@ function readProgress(storageKey, partner) {
           .filter((id) => BEASTS.some((beast) => beast.id === id)),
         best: saved.best && typeof saved.best === 'object' ? saved.best : {},
         cluesFound: Math.max(0, Number(saved.cluesFound) || 0),
+        openAll: saved.openAll === true,
       };
     }
   } catch {
     // A fresh casebook is friendlier than blocking the game when storage is unavailable.
   }
-  return { solved: [], unlocked: [partner], best: {}, cluesFound: 0 };
+  return { solved: [], unlocked: [partner], best: {}, cluesFound: 0, openAll: false };
 }
 
 function scoreClue(attempts, hinted) {
@@ -128,7 +129,7 @@ function CaseFolder({ entry, index, locked, solved, best, onOpen }) {
   );
 }
 
-function Files({ config, cases, progress, partner, style, onOpen }) {
+function Files({ config, cases, progress, partner, style, onOpen, onToggleOpenAll }) {
   const unlockedBeasts = BEASTS.filter((beast) => progress.unlocked.includes(beast.id));
   const nextIndex = cases.findIndex((entry) => !progress.solved.includes(entry.id));
 
@@ -161,7 +162,7 @@ function Files({ config, cases, progress, partner, style, onOpen }) {
             key={entry.id}
             entry={entry}
             index={index}
-            locked={index > 0 && !progress.solved.includes(cases[index - 1].id)}
+            locked={!progress.openAll && index > 0 && !progress.solved.includes(cases[index - 1].id)}
             solved={progress.solved.includes(entry.id)}
             best={progress.best[entry.id]}
             onOpen={onOpen}
@@ -175,6 +176,16 @@ function Files({ config, cases, progress, partner, style, onOpen }) {
           : <button className="sd-primary" onClick={() => onOpen(0)}>全部結案了！重看第一件委託 <span>➜</span></button>}
         <p>每一件委託都答對才會解鎖下一件・答錯不會扣命，可以慢慢想</p>
       </footer>
+
+      {/* 給大人用的：想直接翻到後面的案件看內容時不必先破前面幾件。
+          只解鎖，不動 solved 與 best，小孩真正的破案紀錄不會被蓋掉。 */}
+      <button
+        className={`sd-open-all${progress.openAll ? ' is-on' : ''}`}
+        onClick={onToggleOpenAll}
+        data-testid="detective-open-all"
+      >
+        {progress.openAll ? '🔒 全部委託已打開・點我恢復順序' : '🔓 打開全部委託'}
+      </button>
     </div>
   );
 }
@@ -681,7 +692,17 @@ export default function StoryDetectiveQuest({ variant, words }) {
   const style = { '--sd-ink': config.ink, '--sd-paper': config.paper, '--sd-accent': config.accent, '--sd-tint': config.tint };
 
   if (screen === 'files') {
-    return <Files config={config} cases={cases} progress={progress} partner={partner} style={style} onOpen={openCase} />;
+    return (
+      <Files
+        config={config}
+        cases={cases}
+        progress={progress}
+        partner={partner}
+        style={style}
+        onOpen={openCase}
+        onToggleOpenAll={() => setProgress((current) => ({ ...current, openAll: !current.openAll }))}
+      />
+    );
   }
 
   if (screen === 'report') {
