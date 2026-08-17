@@ -44,6 +44,7 @@ const MIN_BPM = 48;
 const MAX_BPM = 140;
 const MAX_MISTAKES = 3;
 const ERROR_SCORE_PENALTY = 400;
+const TIMELINE_PREROLL_MS = 120;
 
 function sumBar(bar) {
   return bar.reduce((sum, token) => sum + DUR[token].units, 0);
@@ -54,7 +55,14 @@ function buildNotes(exercise) {
   exercise.bars.forEach((bar, barIndex) => {
     let cursor = barIndex * 12;
     bar.forEach((token, noteIndex) => {
-      notes.push({ id: `${exercise.id}-${barIndex}-${noteIndex}`, token, duration: DUR[token].units, at: cursor, barIndex, judged: false });
+      notes.push({
+        id: `${exercise.id}-${barIndex}-${noteIndex}`,
+        token,
+        duration: DUR[token].units,
+        at: cursor,
+        barIndex,
+        judged: false,
+      });
       cursor += DUR[token].units;
     });
   });
@@ -131,17 +139,17 @@ function playMetronomeAt(ctx, atTime, strong = false, volume = 1) {
   osc.stop(atTime + 0.055);
 }
 
-function playMetronomeNow(audioCtxRef, strong = false) {
-  const ctx = ensureAudio(audioCtxRef);
-  if (ctx) playMetronomeAt(ctx, ctx.currentTime, strong, 0.95);
+function scheduleCountInAt(ctx, startAt, eighthMs) {
+  if (!ctx) return;
+  for (let i = 0; i < 6; i += 1) {
+    playMetronomeAt(ctx, startAt + (i * eighthMs) / 1000, i === 0 || i === 3, 0.92);
+  }
 }
 
-function scheduleCountIn(audioCtxRef, eighthMs) {
-  const ctx = ensureAudio(audioCtxRef);
+function scheduleGameMetronomeAt(ctx, startAt, leadMs, unitMs) {
   if (!ctx) return;
-  const start = ctx.currentTime + 0.02;
-  for (let i = 0; i < 6; i += 1) {
-    playMetronomeAt(ctx, start + (i * eighthMs) / 1000, i === 0 || i === 3, 0.9);
+  for (let beat = 0; beat < 4; beat += 1) {
+    playMetronomeAt(ctx, startAt + (leadMs + beat * unitMs * 6) / 1000, beat % 2 === 0, 0.62);
   }
 }
 
@@ -149,28 +157,20 @@ function previewMetronome(audioCtxRef, bpm) {
   const ctx = ensureAudio(audioCtxRef);
   if (!ctx) return;
   const dottedQuarterSeconds = 60 / bpm;
-  const start = ctx.currentTime + 0.03;
+  const start = ctx.currentTime + 0.04;
   for (let beat = 0; beat < 4; beat += 1) {
     playMetronomeAt(ctx, start + beat * dottedQuarterSeconds, beat % 2 === 0, 1);
   }
 }
 
-function scheduleDemoAudio(audioCtxRef, exercise, unitMs, leadMs, metronomeEnabled, delayMs = 40) {
-  const ctx = ensureAudio(audioCtxRef);
+function scheduleDemoAudioAt(ctx, startAt, exercise, unitMs, leadMs, metronomeEnabled) {
   if (!ctx) return;
-  const start = ctx.currentTime + delayMs / 1000;
   const eighthMs = unitMs * 2;
-  for (let i = 0; i < 6; i += 1) {
-    playMetronomeAt(ctx, start + (i * eighthMs) / 1000, i === 0 || i === 3, 0.9);
-  }
+  scheduleCountInAt(ctx, startAt, eighthMs);
   buildNotes(exercise).forEach((note, index) => {
-    playDrumAt(ctx, start + (leadMs + note.at * unitMs) / 1000, index % 4 === 0 ? 1.08 : 0.96);
+    playDrumAt(ctx, startAt + (leadMs + note.at * unitMs) / 1000, index % 4 === 0 ? 1.08 : 0.96);
   });
-  if (metronomeEnabled) {
-    for (let beat = 0; beat < 4; beat += 1) {
-      playMetronomeAt(ctx, start + (leadMs + beat * unitMs * 6) / 1000, beat % 2 === 0, 0.55);
-    }
-  }
+  if (metronomeEnabled) scheduleGameMetronomeAt(ctx, startAt, leadMs, unitMs);
 }
 
 function scoreToStars(accuracy) {
@@ -197,17 +197,22 @@ function RhythmScore({ exercise }) {
     let unitCursor = 0;
     const items = bar.map((token, index) => {
       const x = startX + (unitCursor / 12) * barWidth + 13;
-      const item = { token, x, units: DUR[token].units, index, onset: unitCursor };
+      const item = { token, x, index, onset: unitCursor };
       unitCursor += DUR[token].units;
       return item;
     });
-    const groups = [items.filter((item) => item.onset < 6), items.filter((item) => item.onset >= 6)];
+    const groups = [
+      items.filter((item) => item.onset < 6),
+      items.filter((item) => item.onset >= 6),
+    ];
 
     return (
       <g key={`bar-${barIndex}`}>
         {items.map((item) => {
           const dotted = item.token === 'de' || item.token === 'dq';
-          const standalone = groups.every((group) => !(group.length > 1 && group.includes(item) && group.every((g) => DUR[g.token].units <= 3)));
+          const standalone = groups.every(
+            (group) => !(group.length > 1 && group.includes(item) && group.every((g) => DUR[g.token].units <= 3)),
+          );
           return (
             <g key={`${barIndex}-${item.index}`}>
               <ellipse cx={item.x} cy={baselineY} rx="7.2" ry="5.4" fill="#111827" transform={`rotate(-14 ${item.x} ${baselineY})`} />
@@ -222,7 +227,6 @@ function RhythmScore({ exercise }) {
             </g>
           );
         })}
-
         {groups.map((group, groupIndex) => {
           const beamable = group.length > 1 && group.every((item) => DUR[item.token].units <= 3);
           if (!beamable) return null;
@@ -278,10 +282,10 @@ export default function RhythmTaiko() {
   const [exerciseNo, setExerciseNo] = useState(1);
   const [spriteKey, setSpriteKey] = useState('fox');
   const [freePractice, setFreePractice] = useState(false);
+  const [difficulty, setDifficulty] = useState('guided');
   const [progress, setProgress] = useState(() => loadProgress());
   const [status, setStatus] = useState('idle');
-  const [startedAt, setStartedAt] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
+  const [elapsed, setElapsed] = useState(-TIMELINE_PREROLL_MS);
   const [notes, setNotes] = useState(() => buildNotes(EXERCISES[0]));
   const [score, setScore] = useState(0);
   const [combo, setCombo] = useState(0);
@@ -297,6 +301,8 @@ export default function RhythmTaiko() {
 
   const frameRef = useRef(null);
   const audioCtxRef = useRef(null);
+  const timelineAudioStartRef = useRef(null);
+  const timelinePerfStartRef = useRef(0);
   const notesRef = useRef(notes);
   const statusRef = useRef(status);
   const statsRef = useRef(stats);
@@ -312,6 +318,7 @@ export default function RhythmTaiko() {
   const busy = status === 'playing' || status === 'demo';
   const demoing = status === 'demo';
   const failed = status === 'failed';
+  const audioChallenge = difficulty === 'audio';
   const unitMs = 60000 / tempoBpm / 6;
   const eighthMs = unitMs * 2;
   const leadMs = unitMs * 12;
@@ -344,6 +351,21 @@ export default function RhythmTaiko() {
     if (pulseTimerRef.current) window.clearTimeout(pulseTimerRef.current);
   }, []);
 
+  const getTimelineElapsed = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (ctx && timelineAudioStartRef.current !== null) {
+      return (ctx.currentTime - timelineAudioStartRef.current) * 1000;
+    }
+    return performance.now() - timelinePerfStartRef.current;
+  }, []);
+
+  const prepareTimeline = useCallback((delayMs = TIMELINE_PREROLL_MS) => {
+    const ctx = ensureAudio(audioCtxRef);
+    timelinePerfStartRef.current = performance.now() + delayMs;
+    timelineAudioStartRef.current = ctx ? ctx.currentTime + delayMs / 1000 : null;
+    return { ctx, startAt: timelineAudioStartRef.current };
+  }, []);
+
   const flashMetronome = useCallback((beatIndex) => {
     setMetronomePulse(beatIndex + 1);
     if (pulseTimerRef.current) window.clearTimeout(pulseTimerRef.current);
@@ -365,12 +387,13 @@ export default function RhythmTaiko() {
     statsRef.current = freshStats;
     setMistakes(0);
     mistakesRef.current = 0;
-    setElapsed(0);
+    setElapsed(-TIMELINE_PREROLL_MS);
     setJudgement(message);
     setImpact(null);
     setResult(null);
     setMetronomePulse(0);
     lastMetronomeBeatRef.current = -1;
+    timelineAudioStartRef.current = null;
     statusRef.current = 'idle';
     setStatus('idle');
   }, [exercise]);
@@ -402,17 +425,14 @@ export default function RhythmTaiko() {
     const nextStats = { ...statsRef.current, [type]: statsRef.current[type] + count };
     statsRef.current = nextStats;
     setStats(nextStats);
-
     comboRef.current = 0;
     setCombo(0);
-
     scoreRef.current = Math.max(0, scoreRef.current - ERROR_SCORE_PENALTY * count);
     setScore(scoreRef.current);
 
     const nextMistakes = Math.min(MAX_MISTAKES, mistakesRef.current + count);
     mistakesRef.current = nextMistakes;
     setMistakes(nextMistakes);
-
     setImpact({ seq: Date.now() + Math.random(), side, grade: type === 'ghost' ? 'ghost' : 'miss' });
 
     if (nextMistakes >= MAX_MISTAKES) {
@@ -460,10 +480,11 @@ export default function RhythmTaiko() {
     const fresh = buildNotes(exercise);
     notesRef.current = fresh;
     setNotes(fresh);
-    setElapsed(0);
+    setElapsed(-TIMELINE_PREROLL_MS);
     setImpact(null);
     setMetronomePulse(0);
     lastMetronomeBeatRef.current = -1;
+    timelineAudioStartRef.current = null;
     statusRef.current = 'idle';
     setStatus('idle');
     setJudgement(message);
@@ -475,8 +496,8 @@ export default function RhythmTaiko() {
       return undefined;
     }
 
-    const tick = (now) => {
-      const current = Math.max(0, now - startedAt);
+    const tick = () => {
+      const current = getTimelineElapsed();
       setElapsed(current);
 
       if (statusRef.current === 'demo') {
@@ -495,13 +516,15 @@ export default function RhythmTaiko() {
           setImpact({ seq: Date.now() + Math.random(), side: lastTriggered.index % 2 === 0 ? 'left' : 'right', grade: 'demo' });
           setJudgement(`👂 示範：第 ${lastTriggered.note.barIndex + 1} 小節 · 咚！`);
         }
-        if (metronomeEnabled && current >= leadMs) {
-          const beatIndex = Math.floor((current - leadMs + 12) / (unitMs * 6));
+
+        if (current >= leadMs) {
+          const beatIndex = Math.floor((current - leadMs) / (unitMs * 6));
           if (beatIndex >= 0 && beatIndex < 4 && beatIndex !== lastMetronomeBeatRef.current) {
             lastMetronomeBeatRef.current = beatIndex;
             flashMetronome(beatIndex);
           }
         }
+
         if (current >= totalDuration || updated.every((note) => note.judged)) {
           stopDemo('✅ 示範完成！現在換你打一次');
           return;
@@ -527,12 +550,11 @@ export default function RhythmTaiko() {
         if (failedNow || statusRef.current !== 'playing') return;
       }
 
-      if (metronomeEnabled && current >= leadMs) {
-        const beatIndex = Math.floor((current - leadMs + 12) / (unitMs * 6));
+      if (current >= leadMs) {
+        const beatIndex = Math.floor((current - leadMs) / (unitMs * 6));
         if (beatIndex >= 0 && beatIndex < 4 && beatIndex !== lastMetronomeBeatRef.current) {
           lastMetronomeBeatRef.current = beatIndex;
-          playMetronomeNow(audioCtxRef, beatIndex % 2 === 0);
-          flashMetronome(beatIndex);
+          if (!audioChallenge) flashMetronome(beatIndex);
         }
       }
 
@@ -548,7 +570,7 @@ export default function RhythmTaiko() {
     return () => {
       if (frameRef.current) cancelAnimationFrame(frameRef.current);
     };
-  }, [status, startedAt, leadMs, unitMs, totalDuration, finishGame, stopDemo, metronomeEnabled, flashMetronome, applyMistakes]);
+  }, [status, leadMs, unitMs, totalDuration, getTimelineElapsed, finishGame, stopDemo, flashMetronome, applyMistakes, audioChallenge]);
 
   const startGame = useCallback(() => {
     if (statusRef.current === 'demo') stopDemo();
@@ -566,17 +588,24 @@ export default function RhythmTaiko() {
     statsRef.current = freshStats;
     setMistakes(0);
     mistakesRef.current = 0;
-    setElapsed(0);
+    setElapsed(-TIMELINE_PREROLL_MS);
     setResult(null);
     setImpact(null);
     setMetronomePulse(0);
     lastMetronomeBeatRef.current = -1;
-    setJudgement('預備：1 2 3・4 5 6　⚠️ 三次錯誤就重來');
-    setStartedAt(performance.now());
+    setJudgement(audioChallenge
+      ? '🎧 聽力挑戰：先跟著 1 2 3・4 5 6，之後沒有音符提示'
+      : '預備：1 2 3・4 5 6　⚠️ 三次錯誤就重來');
+
+    const { ctx, startAt } = prepareTimeline();
+    if (ctx && startAt !== null) {
+      scheduleCountInAt(ctx, startAt, eighthMs);
+      if (metronomeEnabled) scheduleGameMetronomeAt(ctx, startAt, leadMs, unitMs);
+    }
+
     statusRef.current = 'playing';
     setStatus('playing');
-    scheduleCountIn(audioCtxRef, eighthMs);
-  }, [exercise, eighthMs, stopDemo]);
+  }, [exercise, eighthMs, leadMs, unitMs, metronomeEnabled, audioChallenge, prepareTimeline, stopDemo]);
 
   const startDemo = useCallback(() => {
     if (statusRef.current === 'playing') return;
@@ -587,21 +616,25 @@ export default function RhythmTaiko() {
     const fresh = buildNotes(exercise);
     notesRef.current = fresh;
     setNotes(fresh);
-    setElapsed(0);
+    setElapsed(-TIMELINE_PREROLL_MS);
     setResult(null);
     setImpact(null);
     setCombo(0);
     comboRef.current = 0;
     setMistakes(0);
     mistakesRef.current = 0;
+    setMetronomePulse(0);
     lastMetronomeBeatRef.current = -1;
-    setJudgement('👂 老師示範：先聽 1 2 3・4 5 6，再聽完整節奏');
-    const delayMs = 40;
-    setStartedAt(performance.now() + delayMs);
+    setJudgement('👂 老師示範：倒數與音符都使用同一個音訊時鐘');
+
+    const { ctx, startAt } = prepareTimeline();
+    if (ctx && startAt !== null) {
+      scheduleDemoAudioAt(ctx, startAt, exercise, unitMs, leadMs, metronomeEnabled);
+    }
+
     statusRef.current = 'demo';
     setStatus('demo');
-    scheduleDemoAudio(audioCtxRef, exercise, unitMs, leadMs, metronomeEnabled, delayMs);
-  }, [exercise, unitMs, leadMs, metronomeEnabled, stopDemo]);
+  }, [exercise, unitMs, leadMs, metronomeEnabled, prepareTimeline, stopDemo]);
 
   const burstImpact = useCallback((side, grade = 'tap') => {
     setImpact({ seq: Date.now() + Math.random(), side, grade });
@@ -609,11 +642,13 @@ export default function RhythmTaiko() {
 
   const hit = useCallback((side = 'center') => {
     if (statusRef.current === 'demo' || statusRef.current === 'failed') return;
+    const current = getTimelineElapsed();
+    if (statusRef.current === 'playing' && current < 0) return;
+
     playDrum(audioCtxRef, comboRef.current >= 10 ? 1.15 : 1);
     burstImpact(side, 'tap');
     if (statusRef.current !== 'playing') return;
 
-    const current = performance.now() - startedAt;
     const candidates = notesRef.current
       .map((note, index) => ({ note, index, delta: Math.abs(current - (leadMs + note.at * unitMs)) }))
       .filter(({ note }) => !note.judged)
@@ -654,7 +689,7 @@ export default function RhythmTaiko() {
     setStats(nextStats);
     setJudgement(grade === 'perfect' ? `PERFECT ✨ +${points}` : grade === 'great' ? `GREAT! ⚡ +${points}` : `GOOD! +${points}`);
     burstImpact(side, grade);
-  }, [startedAt, leadMs, unitMs, burstImpact, applyMistakes]);
+  }, [getTimelineElapsed, leadMs, unitMs, burstImpact, applyMistakes]);
 
   const mobileHit = useCallback((event, side) => {
     event.preventDefault();
@@ -701,10 +736,14 @@ export default function RhythmTaiko() {
   const liveAccuracy = totalAttempts
     ? Math.round(((stats.perfect + stats.great * 0.82 + stats.good * 0.58) / totalAttempts) * 100)
     : 100;
-  const countInLeft = Math.max(0, Math.ceil((leadMs - elapsed) / eighthMs));
+  const countInBeat = status === 'playing' && elapsed >= 0 && elapsed < leadMs
+    ? Math.min(6, Math.floor(elapsed / eighthMs) + 1)
+    : 0;
   const fever = combo >= 10;
   const currentBest = progress[exercise.no] || {};
   const remainingLives = Math.max(0, MAX_MISTAKES - mistakes);
+  const hideScoreForChallenge = audioChallenge && status === 'playing';
+  const hideTimingVisuals = audioChallenge && status === 'playing' && elapsed >= leadMs;
 
   const selectExercise = (no) => {
     const unlocked = freePractice || no <= unlockedThrough;
@@ -737,9 +776,9 @@ export default function RhythmTaiko() {
       <div className="rounded-3xl overflow-hidden border-4 border-amber-300 bg-gradient-to-b from-sky-100 via-cyan-50 to-amber-50 shadow-2xl">
         <div className="bg-slate-950 text-white px-4 py-3 md:px-7 md:py-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <div className="text-[10px] md:text-xs font-black tracking-[0.22em] text-amber-300">RUNKU RHYTHM ARCADE · V2.3 THREE STRIKES</div>
+            <div className="text-[10px] md:text-xs font-black tracking-[0.22em] text-amber-300">RUNKU RHYTHM ARCADE · V2.4 SYNC + AUDIO CHALLENGE</div>
             <h2 className="text-xl md:text-3xl font-black">🥁 6/8 小小節奏達人</h2>
-            <p className="hidden sm:block text-xs text-slate-400 mt-1">空拍或漏拍都算錯；累積 3 次錯誤立刻失敗重來，不能靠狂按過關。</p>
+            <p className="hidden sm:block text-xs text-slate-400 mt-1">倒數、音訊與判定改用同一時鐘；新增完全沒有跑道提示的聽力挑戰。</p>
           </div>
           <div className="grid grid-cols-4 gap-1.5 md:flex md:flex-wrap md:gap-2 text-[10px] md:text-sm font-black w-full sm:w-auto">
             <div className="rounded-xl bg-white/10 px-2 py-2 text-center">分數<br className="sm:hidden" /> {score.toLocaleString()}</div>
@@ -750,13 +789,17 @@ export default function RhythmTaiko() {
         </div>
 
         <div className="p-3 md:p-6 space-y-4 md:space-y-5">
-          <div className="rounded-2xl bg-rose-50 border-2 border-rose-200 p-3 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <div className="font-black text-rose-800">🚨 三次錯誤就重來</div>
-              <div className="text-xs text-rose-600">空拍（亂按）與 MISS（漏拍）都算錯，每次另外扣 {ERROR_SCORE_PENALTY} 分。</div>
+          <div className="grid md:grid-cols-2 gap-3">
+            <div className="rounded-2xl bg-rose-50 border-2 border-rose-200 p-3 flex items-center justify-between gap-3">
+              <div><div className="font-black text-rose-800">🚨 三次錯誤就重來</div><div className="text-xs text-rose-600">空拍與 MISS 都算錯，每次扣 {ERROR_SCORE_PENALTY} 分。</div></div>
+              <div className="flex gap-1 text-xl">{[0, 1, 2].map((index) => <span key={index} className={index < remainingLives ? 'opacity-100' : 'opacity-20 grayscale'}>❤️</span>)}</div>
             </div>
-            <div className="flex gap-2 text-2xl" aria-label={`剩餘 ${remainingLives} 次容錯`}>
-              {[0, 1, 2].map((index) => <span key={index} className={index < remainingLives ? 'opacity-100' : 'opacity-20 grayscale'}>❤️</span>)}
+            <div className="rounded-2xl bg-indigo-50 border-2 border-indigo-200 p-3">
+              <div className="font-black text-indigo-900 mb-2">🎚️ 難度</div>
+              <div className="grid grid-cols-2 gap-2">
+                <button disabled={busy} onClick={() => setDifficulty('guided')} className={`rounded-xl border-2 px-3 py-2 text-sm font-black disabled:opacity-40 ${difficulty === 'guided' ? 'border-sky-500 bg-sky-100 text-sky-800' : 'border-slate-200 bg-white text-slate-600'}`}>👀 標準<br /><span className="text-[10px]">有飛行音符</span></button>
+                <button disabled={busy} onClick={() => setDifficulty('audio')} className={`rounded-xl border-2 px-3 py-2 text-sm font-black disabled:opacity-40 ${difficulty === 'audio' ? 'border-violet-600 bg-violet-100 text-violet-900' : 'border-slate-200 bg-white text-slate-600'}`}>🎧 聽力挑戰<br /><span className="text-[10px]">開始後無視覺提示</span></button>
+              </div>
             </div>
           </div>
 
@@ -785,7 +828,7 @@ export default function RhythmTaiko() {
               <div>
                 <div className="flex items-center justify-between gap-3 mb-2">
                   <div><div className="text-xs font-black tracking-[0.18em] text-indigo-600">TEMPO & METRONOME</div><div className="flex items-end gap-2"><span className="text-3xl font-black text-slate-900">{tempoBpm}</span><span className="pb-1 text-sm font-bold text-slate-500">BPM · ♩.</span></div></div>
-                  <div className="flex items-center gap-2">{[0, 1].map((beat) => <span key={beat} className={`w-4 h-4 rounded-full border-2 border-indigo-300 ${metronomePulse && (metronomePulse - 1) % 2 === beat ? 'bg-amber-400 metro-pulse' : 'bg-slate-100'}`} />)}<span className="text-xs font-black text-slate-500">1 · 4</span></div>
+                  {!audioChallenge || demoing ? <div className="flex items-center gap-2">{[0, 1].map((beat) => <span key={beat} className={`w-4 h-4 rounded-full border-2 border-indigo-300 ${metronomePulse && (metronomePulse - 1) % 2 === beat ? 'bg-amber-400 metro-pulse' : 'bg-slate-100'}`} />)}<span className="text-xs font-black text-slate-500">1 · 4</span></div> : <div className="text-xs font-black text-violet-600">🎧 無視覺拍點</div>}
                 </div>
                 <input type="range" min={MIN_BPM} max={MAX_BPM} step="1" value={tempoBpm} disabled={busy} onChange={(event) => setTempo(event.target.value)} className="w-full accent-indigo-600" aria-label="遊戲速度 BPM" />
                 <div className="flex flex-wrap items-center gap-2 mt-3">
@@ -796,7 +839,7 @@ export default function RhythmTaiko() {
                 </div>
               </div>
               <div className="grid grid-cols-2 lg:grid-cols-1 gap-2">
-                <button onClick={() => setMetronomeEnabled((value) => !value)} className={`rounded-2xl border-b-4 px-4 py-3 font-black active:translate-y-1 active:border-b-2 ${metronomeEnabled ? 'bg-emerald-100 border-emerald-500 text-emerald-800' : 'bg-slate-100 border-slate-400 text-slate-600'}`}>{metronomeEnabled ? '🔊 節拍器 ON' : '🔇 節拍器 OFF'}<div className="text-[10px] opacity-70 mt-1">遊戲中提示 1、4 大拍</div></button>
+                <button disabled={busy} onClick={() => setMetronomeEnabled((value) => !value)} className={`rounded-2xl border-b-4 px-4 py-3 font-black active:translate-y-1 active:border-b-2 disabled:opacity-40 ${metronomeEnabled ? 'bg-emerald-100 border-emerald-500 text-emerald-800' : 'bg-slate-100 border-slate-400 text-slate-600'}`}>{metronomeEnabled ? '🔊 節拍器 ON' : '🔇 節拍器 OFF'}<div className="text-[10px] opacity-70 mt-1">聲音提示 1、4 大拍</div></button>
                 <button onClick={() => previewMetronome(audioCtxRef, tempoBpm)} disabled={busy} className="rounded-2xl border-b-4 border-indigo-500 bg-indigo-100 px-4 py-3 font-black text-indigo-800 active:translate-y-1 active:border-b-2 disabled:opacity-40">▶ 試聽 2 小節<div className="text-[10px] opacity-70 mt-1">目前 {tempoBpm} BPM</div></button>
               </div>
             </div>
@@ -805,8 +848,12 @@ export default function RhythmTaiko() {
           <div className="grid lg:grid-cols-[1fr_260px] gap-4 md:gap-5 items-stretch">
             <div className="rounded-3xl bg-white border-2 border-slate-200 p-3 md:p-5 shadow-sm overflow-hidden">
               <div className="flex flex-wrap items-center justify-between gap-2 mb-1"><div><div className="text-[10px] md:text-xs font-black tracking-[0.18em] text-sky-600">ORIGINAL RHYTHM · 6/8</div><h3 className="text-xl md:text-2xl font-black text-slate-900">第 {exercise.no} 題</h3></div><div className="text-right"><div className="text-[10px] md:text-xs text-slate-500">現在速度 / 原速</div><div className="font-black text-slate-800">♩. = {tempoBpm} / {exercise.bpm}</div></div></div>
-              <div className="w-full overflow-x-auto"><div className="min-w-[520px] sm:min-w-0"><RhythmScore exercise={exercise} /></div></div>
-              <div className="text-[10px] md:text-xs text-slate-500 border-t pt-2 flex flex-wrap justify-between gap-2"><span>節奏資料不因調速改變，只改演奏速度。</span><span>小節檢查：{exercise.bars.map(sumBar).join(' / ')} units</span></div>
+              {hideScoreForChallenge ? (
+                <div className="h-28 md:h-36 rounded-2xl bg-violet-950 text-white flex flex-col items-center justify-center text-center px-4"><div className="text-3xl">🎧</div><div className="font-black text-lg">聽力挑戰：樂譜已隱藏</div><div className="text-xs text-violet-200 mt-1">用剛才看到／聽到的節奏完成這一題</div></div>
+              ) : (
+                <div className="w-full overflow-x-auto"><div className="min-w-[520px] sm:min-w-0"><RhythmScore exercise={exercise} /></div></div>
+              )}
+              <div className="text-[10px] md:text-xs text-slate-500 border-t pt-2 flex flex-wrap justify-between gap-2"><span>{audioChallenge ? '聽力挑戰開始後會隱藏樂譜與跑道提示。' : '標準模式會顯示飛行音符與拍點。'}</span><span>小節檢查：{exercise.bars.map(sumBar).join(' / ')} units</span></div>
             </div>
 
             <div className="rounded-3xl bg-white border-2 border-amber-200 p-3 md:p-4 flex items-center lg:flex-col lg:items-center justify-between gap-3 overflow-hidden">
@@ -816,73 +863,110 @@ export default function RhythmTaiko() {
             </div>
           </div>
 
-          <div key={impact ? `arena-${impact.seq}` : 'arena'} className={`relative rounded-3xl bg-slate-950 p-3 md:p-6 overflow-hidden border-4 ${failed ? 'border-rose-500 danger-pulse' : fever ? 'border-amber-300 rhythm-fever' : 'border-slate-800'} ${impact && !['ghost', 'miss'].includes(impact.grade) ? 'rhythm-screen-shake' : ''}`}>
+          <div key={impact ? `arena-${impact.seq}` : 'arena'} className={`relative rounded-3xl bg-slate-950 p-3 md:p-6 overflow-hidden border-4 ${failed ? 'border-rose-500 danger-pulse' : fever ? 'border-amber-300 rhythm-fever' : audioChallenge ? 'border-violet-500' : 'border-slate-800'} ${impact && !['ghost', 'miss'].includes(impact.grade) ? 'rhythm-screen-shake' : ''}`}>
             <div className="absolute inset-0 pointer-events-none opacity-30" style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, rgba(56,189,248,.35), transparent 30%), radial-gradient(circle at 55% 100%, rgba(251,191,36,.28), transparent 35%)' }} />
             {fever && !failed && <div className="absolute top-2 right-3 z-20 rounded-full bg-amber-300 text-slate-950 px-3 py-1 text-[10px] md:text-xs font-black tracking-widest animate-pulse">🔥 FEVER ×{Math.min(2, 1 + Math.floor(combo / 10) * 0.25).toFixed(2)}</div>}
 
             <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 text-white mb-3">
-              <div><div className="font-black text-sm md:text-lg">第 {exercise.no} 題 · 音符進黃圈才打！</div><div className="hidden md:block text-xs text-slate-400">F / ← = 左手　J / → = 右手　SPACE = 任一手　ENTER = 開始</div><div className="md:hidden text-[10px] text-slate-400">手機：只在音符到黃圈時敲下方鼓面</div></div>
+              <div><div className="font-black text-sm md:text-lg">第 {exercise.no} 題 · {audioChallenge ? '🎧 聽力挑戰' : '音符進黃圈才打！'}</div><div className="hidden md:block text-xs text-slate-400">F / ← = 左手　J / → = 右手　SPACE = 任一手　ENTER = 開始</div><div className="md:hidden text-[10px] text-slate-400">手機：敲下方左右大鼓面</div></div>
               <div key={impact ? `judge-${impact.seq}` : judgement} className={`text-base md:text-2xl font-black ${judgement.includes('PERFECT') ? 'text-amber-300' : judgement.includes('GREAT') ? 'text-cyan-300' : judgement.includes('錯誤') || judgement.includes('失敗') || judgement.includes('MISS') ? 'text-rose-300' : 'text-white'}`} style={{ animation: 'rhythmJudgement 220ms ease-out' }}>{judgement}</div>
             </div>
 
             <div className="relative z-10 h-44 sm:h-52 md:h-60 rounded-3xl overflow-hidden border border-white/10 bg-gradient-to-r from-slate-900 via-sky-950 to-slate-900">
-              <div className="absolute left-[14%] top-0 bottom-0 w-1.5 bg-amber-300 shadow-[0_0_25px_rgba(252,211,77,1)] z-10" />
-              <div key={impact ? `drum-${impact.seq}` : 'drum'} className="absolute left-[14%] top-1/2 h-20 w-20 md:h-28 md:w-28 rounded-full border-[6px] md:border-8 border-white/90 bg-gradient-to-br from-rose-400 to-rose-600 shadow-2xl z-20 flex items-center justify-center" style={{ transform: 'translate(-50%,-50%)', animation: impact ? 'rhythmDrumPunch 180ms cubic-bezier(.2,.85,.25,1)' : undefined }}><span className="text-3xl md:text-5xl">🥁</span></div>
+              {!hideTimingVisuals && <div className="absolute left-[14%] top-0 bottom-0 w-1.5 bg-amber-300 shadow-[0_0_25px_rgba(252,211,77,1)] z-10" />}
+              {!hideTimingVisuals && <div key={impact ? `drum-${impact.seq}` : 'drum'} className="absolute left-[14%] top-1/2 h-20 w-20 md:h-28 md:w-28 rounded-full border-[6px] md:border-8 border-white/90 bg-gradient-to-br from-rose-400 to-rose-600 shadow-2xl z-20 flex items-center justify-center" style={{ transform: 'translate(-50%,-50%)', animation: impact ? 'rhythmDrumPunch 180ms cubic-bezier(.2,.85,.25,1)' : undefined }}><span className="text-3xl md:text-5xl">🥁</span></div>}
 
-              {impact && <><div key={`ring-${impact.seq}`} className={`absolute left-[14%] top-1/2 h-20 w-20 md:h-28 md:w-28 rounded-full border-[6px] md:border-8 z-30 pointer-events-none ${impact.grade === 'perfect' || impact.grade === 'demo' ? 'border-amber-200' : impact.grade === 'ghost' || impact.grade === 'miss' || impact.grade === 'fail' ? 'border-rose-300' : 'border-cyan-200'}`} style={{ animation: 'rhythmRing 360ms ease-out forwards' }} />{[['-70px', '-45px', '-25deg'], ['-52px', '50px', '20deg'], ['0px', '-70px', '45deg'], ['58px', '-45px', '80deg'], ['72px', '16px', '110deg'], ['22px', '65px', '150deg']].map(([dx, dy, rot], index) => <span key={`${impact.seq}-particle-${index}`} className="absolute left-[14%] top-1/2 z-40 text-xl md:text-2xl pointer-events-none" style={{ '--dx': dx, '--dy': dy, '--rot': rot, animation: 'rhythmParticle 430ms ease-out forwards' }}>{impact.grade === 'ghost' || impact.grade === 'miss' || impact.grade === 'fail' ? '❌' : impact.grade === 'perfect' || impact.grade === 'demo' ? '✨' : '⚡'}</span>)}</>}
+              {impact && <><div key={`ring-${impact.seq}`} className={`absolute ${hideTimingVisuals ? 'left-1/2' : 'left-[14%]'} top-1/2 h-20 w-20 md:h-28 md:w-28 rounded-full border-[6px] md:border-8 z-30 pointer-events-none ${impact.grade === 'perfect' || impact.grade === 'demo' ? 'border-amber-200' : impact.grade === 'ghost' || impact.grade === 'miss' || impact.grade === 'fail' ? 'border-rose-300' : 'border-cyan-200'}`} style={{ animation: 'rhythmRing 360ms ease-out forwards' }} />{[['-70px', '-45px', '-25deg'], ['-52px', '50px', '20deg'], ['0px', '-70px', '45deg'], ['58px', '-45px', '80deg'], ['72px', '16px', '110deg'], ['22px', '65px', '150deg']].map(([dx, dy, rot], index) => <span key={`${impact.seq}-particle-${index}`} className={`absolute ${hideTimingVisuals ? 'left-1/2' : 'left-[14%]'} top-1/2 z-40 text-xl md:text-2xl pointer-events-none`} style={{ '--dx': dx, '--dy': dy, '--rot': rot, animation: 'rhythmParticle 430ms ease-out forwards' }}>{impact.grade === 'ghost' || impact.grade === 'miss' || impact.grade === 'fail' ? '❌' : impact.grade === 'perfect' || impact.grade === 'demo' ? '✨' : '⚡'}</span>)}</>}
 
-              {status === 'playing' && countInLeft > 0 && <div className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950/25 pointer-events-none"><div className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-amber-300 text-slate-950 flex items-center justify-center text-4xl md:text-5xl font-black shadow-2xl border-8 border-white/80 animate-pulse">{Math.min(6, countInLeft)}</div></div>}
+              {status === 'playing' && countInBeat > 0 && (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/55 pointer-events-none">
+                  <div className="text-xs font-black tracking-[0.3em] text-amber-200 mb-2">SYNC COUNT-IN</div>
+                  <div key={`count-${countInBeat}`} className="w-24 h-24 md:w-28 md:h-28 rounded-full bg-amber-300 text-slate-950 flex items-center justify-center text-4xl md:text-5xl font-black shadow-2xl border-8 border-white/80 metro-pulse">{countInBeat}</div>
+                  <div className="text-xs text-white/80 mt-2">1 2 3 ・ 4 5 6</div>
+                </div>
+              )}
+
               {demoing && <div className="absolute top-2 left-1/2 -translate-x-1/2 z-40 rounded-full bg-indigo-400 text-white px-4 py-1 text-xs font-black animate-pulse">👂 示範中</div>}
-              {failed && <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-rose-950/75 text-white text-center p-5"><div className="text-5xl mb-2">💥</div><div className="text-3xl font-black">3 次錯誤，本題重來！</div><div className="text-sm text-rose-100 mt-2">亂按也會算空拍錯誤，請看準黃圈再敲。</div><button onClick={startGame} className="mt-5 rounded-2xl bg-white text-rose-700 px-6 py-3 font-black shadow-xl">↻ 馬上重新挑戰</button></div>}
 
-              {Array.from({ length: 13 }).map((_, index) => {
+              {hideTimingVisuals && !failed && (
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center px-6 bg-violet-950/45">
+                  <div className="text-5xl mb-2">🎧</div>
+                  <div className="text-xl md:text-3xl font-black text-white">沒有飛行音符，也沒有拍點格線</div>
+                  <div className="text-xs md:text-sm text-violet-200 mt-2">靠耳朵、記憶與節拍感完成這一題</div>
+                </div>
+              )}
+
+              {failed && <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-rose-950/80 text-white text-center p-5"><div className="text-5xl mb-2">💥</div><div className="text-3xl font-black">3 次錯誤，本題重來！</div><div className="text-sm text-rose-100 mt-2">空拍和漏拍都會計錯，請重新挑戰。</div><button onClick={startGame} className="mt-5 rounded-2xl bg-white text-rose-700 px-6 py-3 font-black">↻ 馬上重新挑戰</button></div>}
+
+              {!hideTimingVisuals && Array.from({ length: 13 }).map((_, index) => {
                 const at = index * 2;
                 const hitTime = leadMs + at * unitMs;
                 const x = 14 + ((hitTime - elapsed) / leadMs) * 82;
                 if (x < 4 || x > 104) return null;
                 const withinBar = index % 6;
                 const strong = withinBar === 0 || withinBar === 3;
-                return <div key={`grid-${index}`} className={`absolute top-0 bottom-0 border-l ${strong ? 'border-amber-200/20' : 'border-white/5'}`} style={{ left: `${x}%` }}><span className={`absolute bottom-2 -translate-x-1/2 text-[9px] md:text-[10px] font-black ${strong ? 'text-amber-300' : 'text-slate-600'}`}>{(withinBar % 6) + 1}</span></div>;
+                return <div key={`grid-${index}`} className={`absolute top-0 bottom-0 border-l ${strong ? 'border-amber-200/20' : 'border-white/5'}`} style={{ left: `${x}%` }}><span className={`absolute bottom-2 -translate-x-1/2 text-[9px] md:text-[10px] font-black ${strong ? 'text-amber-300' : 'text-slate-600'}`}>{withinBar + 1}</span></div>;
               })}
 
-              {notes.map((note) => {
+              {!hideTimingVisuals && notes.map((note) => {
                 const hitTime = leadMs + note.at * unitMs;
                 const x = 14 + ((hitTime - elapsed) / leadMs) * 82;
                 if (x < -8 || x > 108 || note.judged) return null;
-                return <div key={note.id} className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-20" style={{ left: `${x}%` }}><div className="relative w-11 h-11 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-rose-400 to-rose-600 border-4 border-white shadow-[0_0_20px_rgba(251,113,133,.55)] flex items-center justify-center text-white font-black text-xs md:text-base">咚<span className="absolute -bottom-4 md:-bottom-5 text-[8px] md:text-[10px] text-slate-300 whitespace-nowrap">{DUR[note.token].units === 1 ? '♬' : DUR[note.token].units === 2 ? '♪' : DUR[note.token].units === 3 ? '♪.' : DUR[note.token].units === 4 ? '♩' : '♩.'}</span></div></div>;
+                return (
+                  <div key={note.id} className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-20" style={{ left: `${x}%` }}>
+                    <div className="relative w-11 h-11 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-br from-rose-400 to-rose-600 border-4 border-white shadow-[0_0_20px_rgba(251,113,133,.55)] flex items-center justify-center text-white font-black text-xs md:text-base">咚<span className="absolute -bottom-4 md:-bottom-5 text-[8px] md:text-[10px] text-slate-300 whitespace-nowrap">{DUR[note.token].units === 1 ? '♬' : DUR[note.token].units === 2 ? '♪' : DUR[note.token].units === 3 ? '♪.' : DUR[note.token].units === 4 ? '♩' : '♩.'}</span></div>
+                  </div>
+                );
               })}
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-3">
-            <button onClick={startDemo} disabled={status === 'playing' || failed} className={`rounded-2xl border-b-4 px-5 py-4 font-black active:translate-y-1 active:border-b-2 disabled:opacity-40 ${demoing ? 'bg-rose-100 border-rose-500 text-rose-700' : 'bg-indigo-100 border-indigo-500 text-indigo-800'}`}>{demoing ? '■ 停止示範' : '👂 示範本題'}<div className="text-[10px] opacity-70 mt-1">不計分、不算錯</div></button>
-            <button onClick={status === 'playing' ? failRound : startGame} disabled={demoing} className={`rounded-2xl border-b-4 px-5 py-4 font-black active:translate-y-1 active:border-b-2 disabled:opacity-40 ${status === 'playing' ? 'bg-rose-500 border-rose-800 text-white' : failed ? 'bg-rose-600 border-rose-900 text-white' : 'bg-emerald-400 border-emerald-700 text-slate-950'}`}>{status === 'playing' ? '■ 放棄本局' : failed ? '↻ 3錯重來' : status === 'finished' ? '↻ 再挑戰' : '▶ 開始闖關'}<div className="text-[10px] opacity-70 mt-1">ENTER</div></button>
-            <div className="rounded-2xl border-2 border-rose-200 bg-white px-5 py-3 flex items-center justify-between"><div><div className="text-xs font-black text-slate-500">本局容錯</div><div className="font-black text-rose-700">錯誤 {mistakes} / {MAX_MISTAKES}</div></div><div className="text-2xl">{[0, 1, 2].map((index) => <span key={index} className={index < remainingLives ? '' : 'opacity-20 grayscale'}>❤️</span>)}</div></div>
+          <div className="grid md:grid-cols-[1fr_auto] gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <button onMouseDown={() => hit('left')} disabled={demoing || failed} className="rounded-3xl border-b-8 border-rose-800 bg-rose-500 px-5 py-5 text-white font-black text-xl active:translate-y-2 active:border-b-2 disabled:opacity-40">🥁 左手<div className="text-xs opacity-80">F / ←</div></button>
+              <button onMouseDown={() => hit('right')} disabled={demoing || failed} className="rounded-3xl border-b-8 border-sky-800 bg-sky-500 px-5 py-5 text-white font-black text-xl active:translate-y-2 active:border-b-2 disabled:opacity-40">🥁 右手<div className="text-xs opacity-80">J / →</div></button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-1 gap-2 md:min-w-52">
+              <button onClick={startDemo} disabled={status === 'playing' || failed} className="rounded-2xl border-b-4 border-indigo-700 bg-indigo-500 text-white px-4 py-3 font-black active:translate-y-1 disabled:opacity-40">{demoing ? '■ 停止示範' : '👂 示範本題'}</button>
+              <button onClick={status === 'playing' ? failRound : startGame} className={`rounded-2xl border-b-4 px-4 py-3 font-black active:translate-y-1 ${status === 'playing' ? 'border-rose-800 bg-rose-500 text-white' : 'border-emerald-700 bg-emerald-400 text-slate-950'}`}>{status === 'playing' ? '■ 結束本局' : failed ? '↻ 重新挑戰' : '▶ 開始闖關'}</button>
+            </div>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-4 md:gap-5">
-            <div className="rounded-2xl bg-white border border-slate-200 p-4 md:p-5"><h4 className="font-black text-slate-800 mb-3">🏆 本題紀錄</h4><div className="grid grid-cols-2 gap-2 md:gap-3 text-sm"><div className="rounded-xl bg-amber-50 p-3"><div className="text-slate-500">星星</div><StarRow stars={currentBest.stars || 0} /></div><div className="rounded-xl bg-sky-50 p-3"><div className="text-slate-500">最高分</div><div className="font-black text-lg">{(currentBest.score || 0).toLocaleString()}</div></div><div className="rounded-xl bg-emerald-50 p-3"><div className="text-slate-500">最佳準確</div><div className="font-black text-lg">{currentBest.accuracy || 0}%</div></div><div className="rounded-xl bg-violet-50 p-3"><div className="text-slate-500">最高連擊</div><div className="font-black text-lg">{currentBest.combo || 0}</div></div></div></div>
-            <div className="rounded-2xl bg-white border border-slate-200 p-4 md:p-5"><h4 className="font-black text-slate-800 mb-3">🎮 嚴格判定</h4><div className="grid grid-cols-5 gap-1.5 md:gap-2 text-center text-[10px] md:text-xs"><div className="rounded-xl bg-amber-50 p-2"><div className="font-black text-amber-700">PERFECT</div><div className="text-lg md:text-xl font-black">{stats.perfect}</div></div><div className="rounded-xl bg-cyan-50 p-2"><div className="font-black text-cyan-700">GREAT</div><div className="text-lg md:text-xl font-black">{stats.great}</div></div><div className="rounded-xl bg-emerald-50 p-2"><div className="font-black text-emerald-700">GOOD</div><div className="text-lg md:text-xl font-black">{stats.good}</div></div><div className="rounded-xl bg-rose-50 p-2"><div className="font-black text-rose-700">MISS</div><div className="text-lg md:text-xl font-black">{stats.miss}</div></div><div className="rounded-xl bg-slate-100 p-2"><div className="font-black text-slate-600">空拍</div><div className="text-lg md:text-xl font-black">{stats.ghost}</div></div></div><div className="mt-3 text-xs text-slate-500">MISS 與空拍都會降低準確率、扣分並消耗 1 顆心；第 3 次立刻失敗。</div></div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="rounded-2xl bg-white border border-slate-200 p-4"><h4 className="font-black text-slate-800 mb-3">🏆 本題紀錄</h4><div className="grid grid-cols-2 gap-2 text-sm"><div className="rounded-xl bg-amber-50 p-3"><div className="text-slate-500">星星</div><StarRow stars={currentBest.stars || 0} /></div><div className="rounded-xl bg-sky-50 p-3"><div className="text-slate-500">最高分</div><div className="font-black text-lg">{(currentBest.score || 0).toLocaleString()}</div></div><div className="rounded-xl bg-emerald-50 p-3"><div className="text-slate-500">最佳準確</div><div className="font-black text-lg">{currentBest.accuracy || 0}%</div></div><div className="rounded-xl bg-violet-50 p-3"><div className="text-slate-500">最高連擊</div><div className="font-black text-lg">{currentBest.combo || 0}</div></div></div></div>
+            <div className="rounded-2xl bg-white border border-slate-200 p-4"><h4 className="font-black text-slate-800 mb-3">🎮 遊戲判定</h4><div className="grid grid-cols-5 gap-1 text-center text-[10px]"><div className="rounded-xl bg-amber-50 p-2"><div className="font-black text-amber-700">PERFECT</div><div className="text-xl font-black">{stats.perfect}</div></div><div className="rounded-xl bg-cyan-50 p-2"><div className="font-black text-cyan-700">GREAT</div><div className="text-xl font-black">{stats.great}</div></div><div className="rounded-xl bg-emerald-50 p-2"><div className="font-black text-emerald-700">GOOD</div><div className="text-xl font-black">{stats.good}</div></div><div className="rounded-xl bg-rose-50 p-2"><div className="font-black text-rose-700">MISS</div><div className="text-xl font-black">{stats.miss}</div></div><div className="rounded-xl bg-slate-100 p-2"><div className="font-black text-slate-600">空拍</div><div className="text-xl font-black">{stats.ghost}</div></div></div><div className="mt-3 text-xs text-slate-500">60% = ★　78% = ★★　92% = ★★★；三次錯誤直接失敗。</div></div>
           </div>
         </div>
       </div>
 
-      {result && status === 'finished' && <div className="rounded-3xl border-4 border-amber-300 bg-gradient-to-br from-amber-50 via-white to-sky-50 p-5 md:p-8 shadow-xl text-center"><div className="text-sm font-black tracking-[0.25em] text-amber-600">STAGE CLEAR</div><div className="text-3xl md:text-4xl font-black text-slate-900 mt-1">第 {exercise.no} 題完成！</div><div className="my-3"><StarRow stars={result.stars} size="text-5xl" /></div><div className="flex flex-wrap justify-center gap-2 md:gap-3 text-sm font-black"><span className="rounded-full bg-white border px-4 py-2">分數 {result.score.toLocaleString()}</span><span className="rounded-full bg-white border px-4 py-2">準確 {result.accuracy}%</span><span className="rounded-full bg-white border px-4 py-2">錯誤 {result.mistakes}/{MAX_MISTAKES}</span><span className="rounded-full bg-white border px-4 py-2">最高連擊 {result.combo}</span></div><div className="mt-5 flex flex-wrap justify-center gap-3"><button onClick={startGame} className="rounded-2xl bg-slate-900 text-white px-6 py-3 font-black">↻ 再打一遍</button>{exercise.no < 16 && (result.stars > 0 || freePractice) && <button onClick={nextExercise} className="rounded-2xl bg-amber-400 text-slate-950 px-6 py-3 font-black">下一題 →</button>}</div></div>}
+      {result && (
+        <div className="rounded-3xl border-4 border-amber-300 bg-gradient-to-br from-amber-50 via-white to-sky-50 p-5 md:p-8 shadow-xl text-center">
+          <div className="text-sm font-black tracking-[0.25em] text-amber-600">STAGE CLEAR</div>
+          <div className="text-3xl md:text-4xl font-black text-slate-900 mt-1">第 {exercise.no} 題完成！</div>
+          <div className="my-3"><StarRow stars={result.stars} size="text-5xl" /></div>
+          <div className="flex flex-wrap justify-center gap-2 text-sm font-black"><span className="rounded-full bg-white border px-4 py-2">分數 {result.score.toLocaleString()}</span><span className="rounded-full bg-white border px-4 py-2">準確 {result.accuracy}%</span><span className="rounded-full bg-white border px-4 py-2">錯誤 {result.mistakes}/{MAX_MISTAKES}</span></div>
+          <div className="mt-5 flex flex-wrap justify-center gap-3"><button onClick={startGame} className="rounded-2xl bg-slate-900 text-white px-6 py-3 font-black">↻ 再打一遍</button>{exercise.no < 16 && (result.stars > 0 || freePractice) && <button onClick={nextExercise} className="rounded-2xl bg-amber-400 text-slate-950 px-6 py-3 font-black">下一題 →</button>}</div>
+        </div>
+      )}
 
       <div className="md:hidden fixed inset-x-0 bottom-0 z-[80] border-t border-white/20 bg-slate-950/95 backdrop-blur-xl shadow-[0_-18px_45px_rgba(15,23,42,.42)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 10px)' }}>
         <div className="max-w-md mx-auto px-3 pt-2">
-          <div className="flex items-center justify-between px-2 mb-1 text-[10px] font-black tracking-wider text-slate-300"><span>{demoing ? '👂 示範中' : failed ? '💥 本題失敗' : '手機雙鼓面'}</span><span className="rounded-full bg-white/10 px-2 py-1">♩. {tempoBpm} BPM</span><span className={mistakes >= 2 ? 'text-rose-300' : ''}>❤️ {remainingLives}/3</span></div>
+          <div className="flex items-center justify-between px-2 mb-1 text-[10px] font-black tracking-wider text-slate-300"><span>{audioChallenge ? '🎧 聽力挑戰' : '👀 標準模式'}</span><span className="rounded-full bg-white/10 px-2 py-1">♩. {tempoBpm}</span><span>{'❤️'.repeat(remainingLives)}{'♡'.repeat(MAX_MISTAKES - remainingLives)}</span></div>
           <div className="flex items-end justify-center gap-3">
             {[
-              { side: 'left', label: '左手', sub: 'LEFT', base: 'from-rose-400 to-rose-600', ring: 'border-rose-200', glow: 'shadow-[0_0_35px_rgba(251,113,133,.48)]' },
-              { side: 'right', label: '右手', sub: 'RIGHT', base: 'from-sky-400 to-sky-600', ring: 'border-sky-200', glow: 'shadow-[0_0_35px_rgba(56,189,248,.48)]' },
+              { side: 'left', label: '左手', base: 'from-rose-400 to-rose-600', ring: 'border-rose-200', glow: 'shadow-[0_0_35px_rgba(251,113,133,.48)]' },
+              { side: 'right', label: '右手', base: 'from-sky-400 to-sky-600', ring: 'border-sky-200', glow: 'shadow-[0_0_35px_rgba(56,189,248,.48)]' },
             ].map((pad) => {
               const active = impact?.side === pad.side;
-              return <button key={`${pad.side}-${active ? impact.seq : 'idle'}`} type="button" disabled={demoing || failed} onTouchStart={(event) => mobileHit(event, pad.side)} className={`relative select-none overflow-visible rounded-full border-[7px] border-white/90 bg-gradient-to-br ${pad.base} ${pad.glow} w-[42vw] h-[42vw] max-w-[176px] max-h-[176px] min-w-[132px] min-h-[132px] flex flex-col items-center justify-center text-white font-black disabled:opacity-40`} style={{ touchAction: 'none', WebkitTapHighlightColor: 'transparent', animation: active ? 'mobilePadPunch 180ms cubic-bezier(.2,.85,.25,1)' : undefined }} aria-label={`${pad.label}鼓面`}><span className="text-4xl leading-none">🥁</span><span className="text-xl mt-1">{pad.label}</span><span className="text-[10px] opacity-80 tracking-[0.18em]">{pad.sub}</span>{active && <><span className={`absolute left-1/2 top-1/2 w-full h-full rounded-full border-[7px] ${pad.ring} pointer-events-none`} style={{ animation: 'mobilePadRing 360ms ease-out forwards' }} />{[['-48px', '-70px', '-25deg'], ['-72px', '0px', '15deg'], ['-42px', '62px', '35deg'], ['48px', '-70px', '60deg'], ['72px', '0px', '100deg'], ['42px', '62px', '145deg']].map(([dx, dy, rot], index) => <span key={`${impact.seq}-${pad.side}-spark-${index}`} className="absolute left-1/2 top-1/2 text-xl pointer-events-none" style={{ '--dx': dx, '--dy': dy, '--rot': rot, animation: 'rhythmParticle 420ms ease-out forwards' }}>{impact.grade === 'ghost' || impact.grade === 'miss' || impact.grade === 'fail' ? '❌' : impact.grade === 'perfect' ? '✨' : '⚡'}</span>)}</>}</button>;
+              return (
+                <button key={`${pad.side}-${active ? impact.seq : 'idle'}`} type="button" disabled={demoing || failed} onTouchStart={(event) => mobileHit(event, pad.side)} className={`relative select-none rounded-full border-[7px] border-white/90 bg-gradient-to-br ${pad.base} ${pad.glow} w-[42vw] h-[42vw] max-w-[176px] max-h-[176px] min-w-[132px] min-h-[132px] flex flex-col items-center justify-center text-white font-black disabled:opacity-40`} style={{ touchAction: 'none', WebkitTapHighlightColor: 'transparent', animation: active ? 'mobilePadPunch 180ms cubic-bezier(.2,.85,.25,1)' : undefined }} aria-label={`${pad.label}鼓面`}>
+                  <span className="text-4xl leading-none">🥁</span><span className="text-xl mt-1">{pad.label}</span>
+                  {active && <span className={`absolute left-1/2 top-1/2 w-full h-full rounded-full border-[7px] ${pad.ring} pointer-events-none`} style={{ animation: 'mobilePadRing 360ms ease-out forwards' }} />}
+                </button>
+              );
             })}
           </div>
-          <div className="grid grid-cols-2 gap-2 mt-2"><button onClick={startDemo} disabled={status === 'playing' || failed} className="rounded-xl bg-indigo-100 text-indigo-800 py-2 font-black text-xs disabled:opacity-40">{demoing ? '■ 停止示範' : '👂 示範本題'}</button><button onClick={status === 'playing' ? failRound : startGame} disabled={demoing} className={`rounded-xl py-2 font-black text-xs ${status === 'playing' || failed ? 'bg-rose-500 text-white' : 'bg-emerald-400 text-slate-950'} disabled:opacity-40`}>{status === 'playing' ? '■ 放棄' : failed ? '↻ 重新挑戰' : '▶ 開始'}</button></div>
-          <div className="text-center text-[10px] text-slate-400 mt-1">只在音符到黃圈時敲；空拍與漏拍累積 3 次就重來</div>
+          <div className="grid grid-cols-2 gap-2 mt-2"><button onClick={startDemo} disabled={status === 'playing' || failed} className="rounded-xl bg-indigo-500 text-white py-2 text-xs font-black disabled:opacity-40">{demoing ? '■ 停止示範' : '👂 示範本題'}</button><button onClick={status === 'playing' ? failRound : startGame} className={`rounded-xl py-2 text-xs font-black ${status === 'playing' ? 'bg-rose-500 text-white' : 'bg-emerald-400 text-slate-950'}`}>{status === 'playing' ? '■ 結束' : '▶ 開始'}</button></div>
         </div>
       </div>
     </div>
