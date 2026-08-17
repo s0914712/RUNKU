@@ -215,6 +215,43 @@ def sister_flow(browser):
     context.close()
 
 
+def open_all_flow(browser):
+    """同一顆開關，姊妹兩本案件簿都要有，而且不能偽造破案紀錄。"""
+    for profile in ("mei", "jie"):
+        context = browser.new_context(viewport={"width": 1440, "height": 1050})
+        use_profile(context, profile)
+        page = context.new_page()
+        errors = watch_errors(page)
+        reset_storage(page, STORAGE_KEYS[profile])
+        open_game(page, profile)
+
+        files = page.get_by_test_id("story-detective-files")
+        assert page.locator(".sd-folder.is-locked").count() == 3
+        assert "0/4" in files.inner_text(), files.inner_text()
+
+        page.get_by_test_id("detective-open-all").click()
+        assert page.locator(".sd-folder.is-locked").count() == 0, profile
+        # 最後一件委託現在直接點得進去
+        page.locator(".sd-folder").last.click()
+        page.get_by_test_id("story-detective-scene").wait_for()
+        page.get_by_role("button", name="← 檔案室").click()
+        files.wait_for()
+
+        # 破案紀錄沒有被灌水
+        assert "0/4" in files.inner_text(), files.inner_text()
+        saved = page.evaluate("(key) => JSON.parse(localStorage.getItem(key))", STORAGE_KEYS[profile])
+        assert saved["solved"] == [], saved
+        assert saved["best"] == {}, saved
+        assert saved["openAll"] is True, saved
+
+        # 再點一次恢復
+        page.get_by_test_id("detective-open-all").click()
+        assert page.locator(".sd-folder.is-locked").count() == 3
+
+        assert errors == [], errors
+        context.close()
+
+
 def profile_scope(browser):
     for profile, hidden in (("jie", "曙光檔案"), ("mei", "蒼藍檔案")):
         context = browser.new_context(viewport={"width": 1024, "height": 800})
@@ -275,6 +312,7 @@ def main():
         browser = playwright.chromium.launch(headless=True)
         desktop_flow(browser)
         sister_flow(browser)
+        open_all_flow(browser)
         profile_scope(browser)
         mobile_flow(browser)
         browser.close()

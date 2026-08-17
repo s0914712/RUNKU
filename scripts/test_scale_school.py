@@ -250,6 +250,56 @@ def ear_flow(browser):
     context.close()
 
 
+def open_all_flow(browser):
+    """大人用的解鎖開關：全部打開，但不能偽造成她的成績。"""
+    context = browser.new_context(viewport={"width": 1440, "height": 1050})
+    use_profile(context, "mei")
+    page = context.new_page()
+    errors = watch_errors(page)
+    reset_storage(page, STORAGE_KEY)
+    open_game(page)
+
+    the_map = page.get_by_test_id("scale-school-map")
+    assert page.locator(".ss-level.is-locked").count() == 24
+    before = the_map.inner_text()
+    assert "0/25" in before, before
+
+    # 這顆按鈕要低調。`.scale-school button { font: inherit }` 的層級比單一 class 高，
+    # 少了父層選擇器就會被放大成一般按鈕，所以直接檢查算出來的樣式。
+    style = page.get_by_test_id("scale-open-all").evaluate(
+        "element => { const s = getComputedStyle(element); return { size: parseFloat(s.fontSize), color: s.color }; }"
+    )
+    assert style["size"] <= 12, style
+    assert "120, 130, 150" in style["color"], style
+
+    page.get_by_test_id("scale-open-all").click()
+    assert page.locator(".ss-level.is-locked").count() == 0, "應該整排解鎖"
+    # 最後一關（平常要走 24 關才到）現在點得進去
+    page.locator('.ss-level[data-level="melodic-F"]').click()
+    page.get_by_test_id("scale-school-build").wait_for()
+    page.get_by_role("button", name="← 音階地圖").click()
+    the_map.wait_for()
+
+    # 成績完全沒被動過：這是這顆按鈕最重要的一條
+    assert "0/25" in the_map.inner_text(), the_map.inner_text()
+    saved = page.evaluate("(key) => JSON.parse(localStorage.getItem(key))", STORAGE_KEY)
+    assert saved["cleared"] == [], saved
+    assert saved["best"] == {}, saved
+    assert saved["openAll"] is True, saved
+    page.screenshot(path=OUTPUT / "open-all-desktop.png", full_page=True)
+
+    # 重整後仍然全開
+    open_game(page)
+    assert page.locator(".ss-level.is-locked").count() == 0
+
+    # 再點一次回到正常順序
+    page.get_by_test_id("scale-open-all").click()
+    assert page.locator(".ss-level.is-locked").count() == 24
+
+    assert errors == [], errors
+    context.close()
+
+
 def sister_scope(browser):
     context = browser.new_context(viewport={"width": 1024, "height": 800})
     use_profile(context, "jie")
@@ -320,6 +370,7 @@ def main():
         melodic_minor_flow(browser)
         fingerboard_flow(browser)
         ear_flow(browser)
+        open_all_flow(browser)
         sister_scope(browser)
         mobile_flow(browser)
         small_phone_layout(browser)

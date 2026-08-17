@@ -28,12 +28,13 @@ function readProgress() {
       return {
         cleared: Array.isArray(saved.cleared) ? saved.cleared : [],
         best: saved.best && typeof saved.best === 'object' ? saved.best : {},
+        openAll: saved.openAll === true,
       };
     }
   } catch {
     // 沒有存檔就從第一關開始，不要因為 storage 被擋就整個玩不了。
   }
-  return { cleared: [], best: {} };
+  return { cleared: [], best: {}, openAll: false };
 }
 
 function seededShuffle(items, seed) {
@@ -182,7 +183,7 @@ function FormulaRow({ steps, activeIndex = -1 }) {
 
 /* ---------------- 關卡地圖 ---------------- */
 
-function LevelMap({ progress, onOpen }) {
+function LevelMap({ progress, onOpen, onToggleOpenAll }) {
   const clearedCount = progress.cleared.length;
   return (
     <div className="scale-school ss-map" data-testid="scale-school-map">
@@ -204,7 +205,7 @@ function LevelMap({ progress, onOpen }) {
       <ol className="ss-levels">
         {LEVELS.map((level, index) => {
           const cleared = progress.cleared.includes(level.id);
-          const locked = index > 0 && !progress.cleared.includes(LEVELS[index - 1].id);
+          const locked = !progress.openAll && index > 0 && !progress.cleared.includes(LEVELS[index - 1].id);
           return (
             <li key={level.id}>
               <button
@@ -225,6 +226,16 @@ function LevelMap({ progress, onOpen }) {
           );
         })}
       </ol>
+
+      {/* 給大人用的：老師要跳到某個音階看指法時，不必先把前面的關卡玩完。
+          只解鎖，不動 cleared 與 best，所以芊芊真正的紀錄不會被蓋掉，也隨時關得掉。 */}
+      <button
+        className={`ss-open-all${progress.openAll ? ' is-on' : ''}`}
+        onClick={onToggleOpenAll}
+        data-testid="scale-open-all"
+      >
+        {progress.openAll ? '🔒 全部關卡已打開・點我恢復順序' : '🔓 打開全部關卡'}
+      </button>
     </div>
   );
 }
@@ -658,7 +669,15 @@ export default function ScaleSchool() {
     setScreen('map');
   };
 
-  if (screen === 'map') return <LevelMap progress={progress} onOpen={openLevel} />;
+  if (screen === 'map') {
+    return (
+      <LevelMap
+        progress={progress}
+        onOpen={openLevel}
+        onToggleOpenAll={() => setProgress((current) => ({ ...current, openAll: !current.openAll }))}
+      />
+    );
+  }
   if (screen === 'lesson') {
     return level.lesson === 'melodic'
       ? <MelodicLesson level={level} onDone={() => clearLevel(100)} onHome={home} />
