@@ -137,22 +137,45 @@ if (!failures) console.log('  ✓ SCALE_MODES 與關卡清單都沒有 harmonic 
 
 // 7. 上下行的每個音都要留在第一把位
 console.log('\n小提琴第一把位');
+// violinPosition 的上限開到 +9（貼紙⑤）是為了講得出四指伸展的位置，
+// 但關卡本身必須留在真正的第一把位，也就是空弦到四指的 0~7。
 for (const level of LEVELS.filter((item) => item.type === 'build')) {
   const unreachable = scaleRun(level.letter, level.octave, level.mode)
-    .notes.filter((note) => !violinPosition(note.midi));
+    .notes.filter((note) => {
+      const position = violinPosition(note.midi);
+      return !position || position.offset > 7;
+    });
   if (unreachable.length) fail(`${level.id}: ${unreachable.map((n) => n.name).join(' ')} 超出第一把位`);
 }
-if (!failures) console.log('  ✓ 21 關的上行與下行全部在第一把位內');
+if (!failures) console.log('  ✓ 21 關的上行與下行全部在第一把位內（0~7）');
 
-// 8. 三條貼紙要對得上真實的琴：A 弦上是 B / C♯ / D
-console.log('\n三條貼紙');
-const aString = OPEN_STRINGS[2];
+// 8. 五條貼紙要對得上真實的琴。E 弦上面沒有別條弦可以接手，
+// 所以在 E 弦上五條貼紙都會用到：F♯① G♯② A③ B④ C♯⑤。
+console.log('\n五條貼紙');
+const eString = OPEN_STRINGS[3];
 const tapeNotes = TAPE_OFFSETS.map((offset) => {
-  const position = violinPosition(aString.midi + offset);
-  return `${position.tape ? `貼紙${position.tape}` : '無'}`;
+  const position = violinPosition(eString.midi + offset);
+  return position.tape ? `貼紙${position.tape}` : '無';
 });
-if (tapeNotes.join(' ') !== '貼紙1 貼紙2 貼紙3') fail(`貼紙沒有落在 +2/+4/+5：${tapeNotes.join(' ')}`);
+if (tapeNotes.join(' ') !== '貼紙1 貼紙2 貼紙3 貼紙4 貼紙5') {
+  fail(`貼紙沒有落在 +2/+4/+5/+7/+9：${tapeNotes.join(' ')}`);
+}
+// 貼紙④ 和上面那條空弦同音，這是拉琴時對音的依據，弦與弦之間都要成立。
+// 也因為這樣，G / D / A 弦上的貼紙④⑤ 在拉音階時會換成上面那條弦——
+// 貼紙照樣畫在指板上（琴上本來就貼著），但亮起來的是實際會按的那條弦。
+for (let index = 0; index < OPEN_STRINGS.length - 1; index += 1) {
+  const lower = OPEN_STRINGS[index];
+  const upper = OPEN_STRINGS[index + 1];
+  if (lower.midi + 7 !== upper.midi) {
+    fail(`${lower.name} 弦的貼紙④ 對不上 ${upper.name} 空弦`);
+  }
+  const handover = violinPosition(lower.midi + 9);
+  if (handover.string !== upper.name || handover.tape !== 1) {
+    fail(`${lower.name} 弦的貼紙⑤ 應該換成 ${upper.name} 弦貼紙①，實際是 ${handover.string} 弦 ${handover.finger}`);
+  }
+}
 // 只有低二指（+3）永遠是「靠著一指」，其他把位不該亂標
+const aString = OPEN_STRINGS[2];
 const touching = [0, 1, 2, 3, 4, 5, 6, 7].filter((offset) => violinPosition(aString.midi + offset).touching);
 if (touching.join(',') !== '3') fail(`只有 +3 該標「靠著」，實際是 ${touching}`);
 // 同一個音既能用 D 弦四指、也能用 A 空弦按到時，要挑空弦——實際拉琴就是這樣。
@@ -160,7 +183,7 @@ const both = violinPosition(OPEN_STRINGS[1].midi + 7);
 if (both.string !== 'A' || both.offset !== 0) {
   fail(`A4 應該挑 A 空弦，實際是 ${both.string} 弦 ${both.finger}`);
 }
-if (!failures) console.log('  ✓ 貼紙在 +2/+4/+5、只有低二指標「靠著一指」、能用空弦時不用四指');
+if (!failures) console.log('  ✓ 貼紙在 +2/+4/+5/+7/+9、貼紙④＝上面那條空弦、只有低二指標「靠著一指」、能用空弦時不用四指');
 
-console.log(failures ? `\n${failures} 項錯誤` : '\n全部通過：上行、旋律小調下行、音程、把位、三條貼紙');
+console.log(failures ? `\n${failures} 項錯誤` : '\n全部通過：上行、旋律小調下行、音程、把位、五條貼紙');
 process.exit(failures ? 1 : 0);

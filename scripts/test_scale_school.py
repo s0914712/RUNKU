@@ -146,7 +146,7 @@ def melodic_minor_flow(browser):
 
 
 def fingerboard_flow(browser):
-    """指板要用三條貼紙講話，而不是抽象的圓點。"""
+    """指板要用琴上那五條貼紙講話，而不是抽象的圓點。"""
     context = browser.new_context(viewport={"width": 1440, "height": 1050})
     use_profile(context, "mei")
     page = context.new_page()
@@ -161,17 +161,19 @@ def fingerboard_flow(browser):
     page.get_by_test_id("scale-school-build").wait_for()
 
     hint = page.get_by_test_id("scale-finger-hint")
-    # 每條弦只有三條貼紙，不再是八個圓點
-    assert page.locator(".ss-string").first.locator(".ss-tape").count() == 3
+    # 每條弦五條貼紙，和芊芊的琴一樣，不再是八個圓點
+    assert page.locator(".ss-string").first.locator(".ss-tape").count() == 5
 
     press(page, 62)   # D 空弦
     assert "空弦" in hint.inner_text(), hint.inner_text()
     press(page, 64)   # E = D 弦貼紙①
     assert "貼紙①" in hint.inner_text(), hint.inner_text()
-    press(page, 65)   # F = 低二指，老師特別問的「靠著」
+    press(page, 65)   # F = 低二指，老師特別問的「靠著」（這個音沒有貼紙）
     text = hint.inner_text()
     assert "靠著一指" in text, text
     assert page.locator(".ss-finger.is-ghost").count() == 1, "應該把一指也畫出來，才看得出兩指相靠"
+    press(page, 67)   # G = D 弦貼紙③
+    assert "貼紙③" in hint.inner_text(), hint.inner_text()
     page.screenshot(path=OUTPUT / "fingerboard-touching.png", full_page=True)
 
     assert errors == [], errors
@@ -375,7 +377,7 @@ def main():
         mobile_flow(browser)
         small_phone_layout(browser)
         browser.close()
-    print("Scale school: lesson, ascending+descending runs, melodic minor differing both ways, three-tape fingerboard, ear training, unlocks, persistence, profile scope, and mobile layout passed.")
+    print("Scale school: lesson, ascending+descending runs, melodic minor differing both ways, five-tape fingerboard, ear training, unlocks, persistence, profile scope, and mobile layout passed.")
 
 
 if __name__ == "__main__":

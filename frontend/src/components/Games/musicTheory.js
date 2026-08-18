@@ -109,10 +109,20 @@ export const OPEN_STRINGS = [
   { name: 'E', midi: 76 },
 ];
 
-// 初學者琴上第一把位只貼三條貼紙，位置是距空弦 +2、+4、+5 個半音。
-// 在 A 弦上就是 B（貼紙①）、C♯（貼紙②）、D（貼紙③）。
-export const TAPE_OFFSETS = [2, 4, 5];
-export const TAPE_MARK = ['①', '②', '③'];
+// 芊芊的琴上貼了五條貼紙，位置是距空弦 +2、+4、+5、+7、+9 個半音。
+// 從最粗的 G 弦看，由琴頭往琴身依序是 A①、B②、C③、D④、E⑤——
+// 剛好是從空弦往上數的五個音階音，每條弦都一樣。
+// 貼紙④ 和上面那條空弦同音（G 弦的 D＝空弦 D），所以它也是對音用的參考點。
+export const TAPE_OFFSETS = [2, 4, 5, 7, 9];
+export const TAPE_MARK = ['①', '②', '③', '④', '⑤'];
+
+// 畫指板時的橫軸長度（半音數）。比最後一條貼紙多留一點，貼紙⑤ 才不會擠在最右邊。
+export const FINGERBOARD_SPAN = 10;
+
+// 第一把位按得到 0~7（空弦到四指）；貼紙⑤ 的 +9 要把四指往前伸才按得到。
+// 上限開到 9 只是為了把貼紙⑤ 也講得出來——因為是由高往低找弦，
+// 其他弦上的 +8、+9 都會先被上面那條弦用更小的把位接走，只有 E 弦最上面幾個音會用到。
+const MAX_OFFSET = 9;
 
 // 每個把位怎麼跟貼紙講。措辭要對得起實際的手感：
 // 只有 offset 3 的「二指靠著一指」永遠成立——二指往回退半音時，真的貼在一指旁邊。
@@ -122,18 +132,20 @@ const FIRST_POSITION = {
   0: { finger: '空弦', short: '0', tape: null, touching: null, hint: '空弦，不用按手指' },
   1: { finger: '一指', short: '1', tape: null, touching: null, hint: '一指往琴頭方向靠，比貼紙①再後面一點' },
   2: { finger: '一指', short: '1', tape: 1, touching: null, hint: '一指按在貼紙①' },
-  3: { finger: '二指', short: '2', tape: null, touching: '一指', hint: '二指靠著一指，兩根手指貼在一起' },
+  3: { finger: '二指', short: '2', tape: null, touching: '一指', hint: '二指靠著一指，兩根手指貼在一起（這個音沒有貼紙）' },
   4: { finger: '二指', short: '2', tape: 2, touching: null, hint: '二指按在貼紙②' },
   5: { finger: '三指', short: '3', tape: 3, touching: null, hint: '三指按在貼紙③（貼紙②和③本來就靠在一起）' },
-  6: { finger: '三指', short: '3', tape: null, touching: null, hint: '三指比貼紙③再往前一點' },
-  7: { finger: '四指', short: '4', tape: null, touching: null, hint: '四指，比貼紙③再過去一個全音' },
+  6: { finger: '三指', short: '3', tape: null, touching: null, hint: '三指比貼紙③再往前一點，在貼紙③和④中間' },
+  7: { finger: '四指', short: '4', tape: 4, touching: null, hint: '四指按在貼紙④，聲音和上面那條空弦一樣，可以拿來對音' },
+  8: { finger: '四指', short: '4', tape: null, touching: null, hint: '四指往前伸一點，在貼紙④和⑤中間' },
+  9: { finger: '四指', short: '4', tape: 5, touching: null, hint: '四指伸到貼紙⑤' },
 };
 
 // 選「搆得到這個音的最高那條弦」，這也是實際拉音階時的自然選擇。
 export function violinPosition(midi) {
   for (let index = OPEN_STRINGS.length - 1; index >= 0; index -= 1) {
     const offset = midi - OPEN_STRINGS[index].midi;
-    if (offset >= 0 && offset <= 7) {
+    if (offset >= 0 && offset <= MAX_OFFSET) {
       // 由高往低找，所以同時能用空弦和四指按到的音會挑空弦——實際拉琴也是這樣選。
       return { string: OPEN_STRINGS[index].name, stringIndex: index, offset, ...FIRST_POSITION[offset] };
     }

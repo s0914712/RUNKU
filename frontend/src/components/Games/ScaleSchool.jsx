@@ -5,6 +5,7 @@ import {
   OPEN_STRINGS,
   TAPE_OFFSETS,
   TAPE_MARK,
+  FINGERBOARD_SPAN,
   isBlackKey,
   noteNameOf,
   spellScale,
@@ -105,11 +106,11 @@ function Keyboard({ fromMidi, scale, pressedCount, wrongMidi, hintMidi, onPress,
 
 /* ---------------- 小提琴指板 ---------------- */
 
-// 畫成和芊芊的琴一樣：第一把位只有三條貼紙。
+// 畫成和芊芊的琴一樣：五條貼紙，距空弦 +2、+4、+5、+7、+9 個半音。
 // 位置沿弦按半音數等距擺，所以貼紙②③本來就靠在一起這件事看得出來。
 function Fingerboard({ midi }) {
   const position = midi == null ? null : violinPosition(midi);
-  const percentOf = (offset) => (offset / 7) * 100;
+  const percentOf = (offset) => (offset / FINGERBOARD_SPAN) * 100;
 
   return (
     <div className="ss-fingerboard" data-testid="scale-fingerboard">
@@ -160,7 +161,7 @@ function Fingerboard({ midi }) {
       <p className="ss-fingerboard-hint" data-testid="scale-finger-hint">
         {position
           ? <>{position.touching && <b className="ss-touch-badge">🤝 靠著{position.touching}</b>}{position.hint}</>
-          : '按下鍵盤上的音，這裡會告訴你按哪一條弦、哪一條貼紙'}
+          : '按下鍵盤上的音，這裡會告訴你按哪一條弦、哪一條貼紙（琴上一共五條）'}
       </p>
     </div>
   );

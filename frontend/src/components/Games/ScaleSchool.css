@@ -96,7 +96,7 @@
 .ss-compare b { display: block; margin-bottom: 6px; color: var(--ss-tint); font-size: 16px; }
 .ss-compare-notes { font-size: clamp(15px, 2.2vw, 20px); font-weight: 900; overflow-wrap: anywhere; }
 
-/* ---------- 小提琴指板（三條貼紙，和芊芊的琴一樣） ---------- */
+/* ---------- 小提琴指板（五條貼紙，和芊芊的琴一樣） ---------- */
 .ss-fingerboard { width: min(760px, 100%); padding: 14px 18px; border: 3px solid var(--ss-ink); border-radius: 12px; background: #f6efe2; box-shadow: 4px 5px 0 rgba(28,35,64,.16); }
 .ss-fingerboard header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .ss-fingerboard header small { color: var(--ss-tint); font: 800 12px Changa, sans-serif; letter-spacing: .12em; }
@@ -105,7 +105,7 @@
 .ss-string { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 12px; padding: 4px 8px; border-radius: 8px; }
 .ss-string.is-active { background: #fff3cf; }
 .ss-string-name { display: grid; place-items: center; width: 30px; height: 30px; border: 2px solid var(--ss-ink); border-radius: 50%; font: 800 15px Changa, sans-serif; }
-/* 弦：左端是琴頭，貼紙依半音數擺，所以貼紙②③看起來就是靠在一起的 */
+/* 弦：左端是琴頭，五條貼紙依半音數擺，所以貼紙②③看起來就是靠在一起的 */
 .ss-string-line { position: relative; height: 34px; margin-right: 26px; }
 .ss-string-line::before { content: ""; position: absolute; left: 0; right: -26px; top: 50%; height: 3px; background: #b7a98c; }
 .ss-string-line::after { content: ""; position: absolute; left: -4px; top: 3px; bottom: 3px; width: 5px; border-radius: 2px; background: var(--ss-ink); }
