@@ -161,8 +161,17 @@ def fingerboard_flow(browser):
     page.get_by_test_id("scale-school-build").wait_for()
 
     hint = page.get_by_test_id("scale-finger-hint")
-    # 每條弦五條貼紙，和芊芊的琴一樣，不再是八個圓點
-    assert page.locator(".ss-string").first.locator(".ss-tape").count() == 5
+    # 指板是直的：四條弦、五條貼紙，貼紙一條橫跨四條弦（琴上就是一條膠帶貼過去）
+    board = page.get_by_test_id("scale-fingerboard")
+    assert board.locator(".ss-strand").count() == 4
+    assert board.locator(".ss-tape").count() == 5
+    # 弦由左到右 G D A E，琴頭在上——和琴譜上的指板圖一致
+    assert [head.inner_text() for head in board.locator(".ss-string-name").all()] == ["G", "D", "A", "E"]
+    # 貼紙由上往下依序排開，而且②③（差半音）要明顯比①②（差全音）近——
+    # 直的畫也要看得出「貼紙②和③本來就靠在一起」。
+    tape_tops = [board.locator(".ss-tape").nth(i).bounding_box()["y"] for i in range(5)]
+    assert tape_tops == sorted(tape_tops), tape_tops
+    assert (tape_tops[2] - tape_tops[1]) * 1.5 < tape_tops[1] - tape_tops[0], tape_tops
 
     press(page, 62)   # D 空弦
     assert "空弦" in hint.inner_text(), hint.inner_text()
@@ -172,9 +181,10 @@ def fingerboard_flow(browser):
     text = hint.inner_text()
     assert "靠著一指" in text, text
     assert page.locator(".ss-finger.is-ghost").count() == 1, "應該把一指也畫出來，才看得出兩指相靠"
+    page.screenshot(path=OUTPUT / "fingerboard-touching.png", full_page=True)
     press(page, 67)   # G = D 弦貼紙③
     assert "貼紙③" in hint.inner_text(), hint.inner_text()
-    page.screenshot(path=OUTPUT / "fingerboard-touching.png", full_page=True)
+    page.screenshot(path=OUTPUT / "fingerboard-tape.png", full_page=True)
 
     assert errors == [], errors
     context.close()

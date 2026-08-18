@@ -106,11 +106,15 @@ function Keyboard({ fromMidi, scale, pressedCount, wrongMidi, hintMidi, onPress,
 
 /* ---------------- 小提琴指板 ---------------- */
 
-// 畫成和芊芊的琴一樣：五條貼紙，距空弦 +2、+4、+5、+7、+9 個半音。
-// 位置沿弦按半音數等距擺，所以貼紙②③本來就靠在一起這件事看得出來。
+// 直的畫，和琴譜上的指板圖、還有把琴立起來看的樣子一致：
+// 琴頭在上，弦由左到右是 G D A E，音越低的弦畫得越粗。
+// 貼紙是一條橫線跨過四條弦——琴上本來就是一條膠帶貼過去的，不是每條弦各一塊。
+// 縱向位置按半音數等距擺，所以貼紙②③本來就靠在一起這件事看得出來。
 function Fingerboard({ midi }) {
   const position = midi == null ? null : violinPosition(midi);
   const percentOf = (offset) => (offset / FINGERBOARD_SPAN) * 100;
+  // 每條弦佔一個等寬的直欄，圓點畫在欄的正中間。
+  const laneOf = (stringIndex) => ((stringIndex + 0.5) / OPEN_STRINGS.length) * 100;
 
   return (
     <div className="ss-fingerboard" data-testid="scale-fingerboard">
@@ -119,43 +123,90 @@ function Fingerboard({ midi }) {
         <b>{position ? `${position.string} 弦 · ${position.finger}` : '在小提琴上的位置'}</b>
       </header>
 
-      <div className="ss-strings">
-        {OPEN_STRINGS.map((string, index) => {
-          const active = position?.stringIndex === index;
-          return (
-            <div key={string.name} className={`ss-string${active ? ' is-active' : ''}`}>
-              <span className="ss-string-name">{string.name}</span>
-              <div className="ss-string-line">
-                {TAPE_OFFSETS.map((offset, tapeIndex) => (
-                  <i
-                    key={offset}
-                    className={`ss-tape${active && position.tape === tapeIndex + 1 ? ' is-active' : ''}`}
-                    style={{ left: `${percentOf(offset)}%` }}
-                  >{TAPE_MARK[tapeIndex]}</i>
-                ))}
+      <div className="ss-board">
+        <span className="ss-board-corner" aria-hidden="true" />
 
-                {/* 低二指的時候把一指也畫出來，並且用一條連結把兩指框起來——
-                    真實的琴上這兩指是貼著的，但半音在圖上有距離，不畫連結會看起來像分開的。 */}
-                {active && position.touching && (
-                  <>
-                    <i
-                      className="ss-touch-link"
-                      style={{ left: `${percentOf(2)}%`, width: `${percentOf(position.offset) - percentOf(2)}%` }}
-                    />
-                    <i className="ss-finger is-ghost" style={{ left: `${percentOf(2)}%` }}>1</i>
-                  </>
-                )}
-                {active && position.offset > 0 && (
+        {/* 弦名排在琴頭上方，正對著自己那一條弦 */}
+        <div className="ss-heads">
+          {OPEN_STRINGS.map((string, index) => (
+            <span
+              key={string.name}
+              className={`ss-string-name${position?.stringIndex === index ? ' is-active' : ''}`}
+            >{string.name}</span>
+          ))}
+        </div>
+
+        {/* 貼紙的記號排在指板左邊，免得壓到弦上的圓點 */}
+        <div className="ss-marks">
+          {TAPE_OFFSETS.map((offset, tapeIndex) => (
+            <i
+              key={offset}
+              className={`ss-mark${position?.tape === tapeIndex + 1 ? ' is-active' : ''}`}
+              style={{ top: `${percentOf(offset)}%` }}
+            >{TAPE_MARK[tapeIndex]}</i>
+          ))}
+        </div>
+
+        <div className="ss-neck">
+          {/* 按到的那條弦整欄打亮，一眼看得出是哪一條 */}
+          {position && (
+            <i
+              className="ss-lane"
+              style={{ left: `${laneOf(position.stringIndex)}%`, width: `${100 / OPEN_STRINGS.length}%` }}
+            />
+          )}
+
+          {TAPE_OFFSETS.map((offset, tapeIndex) => (
+            <i
+              key={offset}
+              className={`ss-tape${position?.tape === tapeIndex + 1 ? ' is-active' : ''}`}
+              style={{ top: `${percentOf(offset)}%` }}
+            />
+          ))}
+
+          {OPEN_STRINGS.map((string, index) => (
+            <i
+              key={string.name}
+              className={`ss-strand${position?.stringIndex === index ? ' is-active' : ''}`}
+              style={{ left: `${laneOf(index)}%`, width: `${OPEN_STRINGS.length - index + 1}px` }}
+            />
+          ))}
+
+          {position && (
+            <>
+              {/* 低二指的時候把一指也畫出來，並且用一條連結把兩指框起來——
+                  真實的琴上這兩指是貼著的，但半音在圖上有距離，不畫連結會看起來像分開的。 */}
+              {position.touching && (
+                <>
                   <i
-                    className={`ss-finger${position.touching ? ' is-touching' : ''}${position.tape ? '' : ' is-off-tape'}`}
-                    style={{ left: `${percentOf(position.offset)}%` }}
-                  >{position.short}</i>
-                )}
-                {active && position.offset === 0 && <i className="ss-open-tag">空弦</i>}
-              </div>
-            </div>
-          );
-        })}
+                    className={`ss-touch-link${position.stringIndex === OPEN_STRINGS.length - 1 ? ' is-flipped' : ''}`}
+                    style={{
+                      left: `${laneOf(position.stringIndex)}%`,
+                      top: `${percentOf(2)}%`,
+                      height: `${percentOf(position.offset) - percentOf(2)}%`,
+                    }}
+                  />
+                  <i
+                    className="ss-finger is-ghost"
+                    style={{ left: `${laneOf(position.stringIndex)}%`, top: `${percentOf(2)}%` }}
+                  >1</i>
+                </>
+              )}
+              {position.offset > 0 && (
+                <i
+                  className={`ss-finger${position.touching ? ' is-touching' : ''}${position.tape ? '' : ' is-off-tape'}`}
+                  style={{
+                    left: `${laneOf(position.stringIndex)}%`,
+                    top: `${percentOf(position.offset)}%`,
+                  }}
+                >{position.short}</i>
+              )}
+              {position.offset === 0 && (
+                <i className="ss-open-tag" style={{ left: `${laneOf(position.stringIndex)}%` }}>空弦</i>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       <p className="ss-fingerboard-hint" data-testid="scale-finger-hint">

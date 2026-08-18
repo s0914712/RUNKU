@@ -97,27 +97,46 @@
 .ss-compare-notes { font-size: clamp(15px, 2.2vw, 20px); font-weight: 900; overflow-wrap: anywhere; }
 
 /* ---------- 小提琴指板（五條貼紙，和芊芊的琴一樣） ---------- */
-.ss-fingerboard { width: min(760px, 100%); padding: 14px 18px; border: 3px solid var(--ss-ink); border-radius: 12px; background: #f6efe2; box-shadow: 4px 5px 0 rgba(28,35,64,.16); }
+.ss-fingerboard { width: min(430px, 100%); padding: 14px 18px 16px; border: 3px solid var(--ss-ink); border-radius: 12px; background: #f6efe2; box-shadow: 4px 5px 0 rgba(28,35,64,.16); }
 .ss-fingerboard header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .ss-fingerboard header small { color: var(--ss-tint); font: 800 12px Changa, sans-serif; letter-spacing: .12em; }
 .ss-fingerboard header b { font-size: 19px; }
-.ss-strings { display: flex; flex-direction: column; gap: 9px; }
-.ss-string { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 12px; padding: 4px 8px; border-radius: 8px; }
-.ss-string.is-active { background: #fff3cf; }
-.ss-string-name { display: grid; place-items: center; width: 30px; height: 30px; border: 2px solid var(--ss-ink); border-radius: 50%; font: 800 15px Changa, sans-serif; }
-/* 弦：左端是琴頭，五條貼紙依半音數擺，所以貼紙②③看起來就是靠在一起的 */
-.ss-string-line { position: relative; height: 34px; margin-right: 26px; }
-.ss-string-line::before { content: ""; position: absolute; left: 0; right: -26px; top: 50%; height: 3px; background: #b7a98c; }
-.ss-string-line::after { content: ""; position: absolute; left: -4px; top: 3px; bottom: 3px; width: 5px; border-radius: 2px; background: var(--ss-ink); }
-.ss-tape { position: absolute; top: 2px; height: 30px; width: 15px; display: grid; place-items: center; transform: translateX(-50%); border-radius: 3px; background: #6f9fb5; color: #fff; font: 800 10px/1 sans-serif; font-style: normal; }
-.ss-tape.is-active { background: var(--ss-rose); box-shadow: 0 0 0 3px rgba(214,96,122,.35); }
-.ss-finger { position: absolute; top: 50%; z-index: 3; display: grid; place-items: center; width: 28px; height: 28px; transform: translate(-50%, -50%); border: 3px solid var(--ss-ink); border-radius: 50%; background: var(--ss-rose); color: #fff; font: 900 14px sans-serif; font-style: normal; }
+
+/* 直的指板：琴頭在上，弦由左到右 G D A E。
+   左邊那一欄放貼紙的記號，右邊是指板本體。 */
+.ss-board { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px 8px; }
+.ss-heads { display: grid; grid-template-columns: repeat(4, 1fr); place-items: center; }
+.ss-string-name { display: grid; place-items: center; width: 30px; height: 30px; border: 2px solid var(--ss-ink); border-radius: 50%; background: #fff; font: 800 15px Changa, sans-serif; }
+.ss-string-name.is-active { background: var(--ss-gold); }
+
+/* 指板本體。高度固定，貼紙才能按半音數的比例擺在正確的位置。
+   ::before 是琴頭那條上弦枕——一切位置都是從它算起的 0。 */
+.ss-neck { position: relative; height: clamp(240px, 46vw, 310px); border-radius: 4px 4px 10px 10px; background: linear-gradient(#3b3a44, #26252e); }
+.ss-neck::before { content: ""; position: absolute; left: -3px; right: -3px; top: -5px; height: 7px; border-radius: 3px; background: #e8ddc4; }
+
+/* 貼紙：一條橫線跨過四條弦，和琴上貼的一樣 */
+.ss-tape { position: absolute; left: -4px; right: -4px; height: 7px; transform: translateY(-50%); border-radius: 3px; background: #6f9fb5; }
+.ss-tape.is-active { background: var(--ss-rose); box-shadow: 0 0 0 3px rgba(214,96,122,.4); }
+.ss-marks { position: relative; }
+.ss-mark { position: absolute; right: 0; display: grid; place-items: center; width: 22px; height: 22px; transform: translateY(-50%); border-radius: 50%; background: #6f9fb5; color: #fff; font: 800 12px/1 sans-serif; font-style: normal; }
+.ss-mark.is-active { background: var(--ss-rose); }
+
+/* 弦：越低的弦畫得越粗，和真的琴一樣好認（粗細由 JSX 依弦序給） */
+.ss-strand { position: absolute; top: 0; bottom: 0; z-index: 2; transform: translateX(-50%); background: #cfc7b4; }
+.ss-strand.is-active { background: #fff; }
+/* 按到的那條弦整欄打亮 */
+.ss-lane { position: absolute; top: 0; bottom: 0; z-index: 1; transform: translateX(-50%); background: rgba(255,243,207,.2); }
+
+.ss-finger { position: absolute; z-index: 4; display: grid; place-items: center; width: 28px; height: 28px; transform: translate(-50%, -50%); border: 3px solid var(--ss-ink); border-radius: 50%; background: var(--ss-rose); color: #fff; font: 900 14px sans-serif; font-style: normal; }
 .ss-finger.is-off-tape { background: var(--ss-gold); color: var(--ss-ink); border-style: dashed; }
-.ss-finger.is-ghost { z-index: 2; background: #fff; color: #8b93a1; border-color: #8b93a1; }
-/* 把相靠的兩指連起來，並在中間標「貼著」，避免圖上看起來是分開的 */
-.ss-touch-link { position: absolute; top: 50%; z-index: 1; height: 14px; transform: translateY(-50%); border: 3px solid var(--ss-gold); border-radius: 99px; background: rgba(240,180,41,.35); }
-.ss-touch-link::after { content: "貼著"; position: absolute; left: 50%; top: -20px; transform: translateX(-50%); color: #8a6410; font: 800 11px sans-serif; font-style: normal; white-space: nowrap; }
-.ss-open-tag { position: absolute; left: 0; top: 50%; transform: translate(-2px, -50%); padding: 3px 8px; border: 2px solid var(--ss-ink); border-radius: 6px; background: var(--ss-rose); color: #fff; font: 800 12px sans-serif; font-style: normal; }
+.ss-finger.is-ghost { z-index: 3; background: #fff; color: #8b93a1; border-color: #8b93a1; }
+/* 把相靠的兩指連起來，並在旁邊標「貼著」，避免圖上看起來是分開的。
+   標籤要閃開手指圓點（半徑 14px），所以從 20px 起跳；
+   最右邊那條弦沒有空間，改成標在左邊，才不會掉出指板外。 */
+.ss-touch-link { position: absolute; z-index: 3; width: 14px; transform: translateX(-50%); border: 3px solid var(--ss-gold); border-radius: 99px; background: rgba(240,180,41,.35); }
+.ss-touch-link::after { content: "貼著"; position: absolute; left: 20px; top: 50%; transform: translateY(-50%); padding: 2px 6px; border-radius: 6px; background: rgba(28,35,64,.92); color: var(--ss-gold); font: 800 11px sans-serif; font-style: normal; white-space: nowrap; }
+.ss-touch-link.is-flipped::after { left: auto; right: 20px; }
+.ss-open-tag { position: absolute; top: 0; z-index: 4; transform: translate(-50%, 8px); padding: 3px 8px; border: 2px solid var(--ss-ink); border-radius: 6px; background: var(--ss-rose); color: #fff; font: 800 12px sans-serif; font-style: normal; white-space: nowrap; }
 .ss-fingerboard-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 12px 0 0; font-size: 16px; font-weight: 700; line-height: 1.7; }
 .ss-touch-badge { padding: 4px 10px; border: 2px solid var(--ss-ink); border-radius: 99px; background: var(--ss-gold); font-size: 14px; white-space: nowrap; }
 
@@ -187,10 +206,9 @@
   .ss-key-white { height: 150px; font-size: 13px; }
   .ss-key-black { height: 92px; font-size: 10px; }
   .ss-note-strip span { min-width: 40px; padding: 6px; font-size: 14px; }
-  .ss-string { grid-template-columns: 28px minmax(0, 1fr); gap: 8px; }
-  .ss-string-line { margin-right: 20px; height: 30px; }
-  .ss-string-line::before { right: -20px; }
-  .ss-tape { width: 12px; height: 26px; font-size: 9px; }
+  .ss-board { grid-template-columns: 22px minmax(0, 1fr); }
+  .ss-string-name { width: 26px; height: 26px; font-size: 13px; }
+  .ss-mark { width: 19px; height: 19px; font-size: 11px; }
   .ss-finger { width: 24px; height: 24px; font-size: 12px; border-width: 2px; }
   .ss-open-tag { padding: 2px 6px; font-size: 11px; }
   .ss-fingerboard-hint { font-size: 14px; }
